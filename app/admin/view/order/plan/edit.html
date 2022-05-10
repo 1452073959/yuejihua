@@ -1,0 +1,65 @@
+<div class="layuimini-container">
+    <form id="app-form" class="layui-form layuimini-form">
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">user_id</label>
+            <div class="layui-input-block">
+                <input type="text" name="user_id" class="layui-input" lay-verify="required" placeholder="请输入user_id" value="{$row.user_id|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">card_id</label>
+            <div class="layui-input-block">
+                <input type="text" name="card_id" class="layui-input" lay-verify="required" placeholder="请输入card_id" value="{$row.card_id|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">1消1还1,2消2换二</label>
+            <div class="layui-input-block">
+                <input type="text" name="repayment_mode" class="layui-input" lay-verify="required" placeholder="请输入1消1还1,2消2换二" value="{$row.repayment_mode|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">账单金额</label>
+            <div class="layui-input-block">
+                <input type="text" name="bill_amount" class="layui-input" lay-verify="required" placeholder="请输入账单金额" value="{$row.bill_amount|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">卡余额</label>
+            <div class="layui-input-block">
+                <input type="text" name="card_balance" class="layui-input" lay-verify="required" placeholder="请输入卡余额" value="{$row.card_balance|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">还款笔数</label>
+            <div class="layui-input-block">
+                <input type="text" name="plan_number" class="layui-input" lay-verify="required" placeholder="请输入还款笔数" value="{$row.plan_number|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">待还金额</label>
+            <div class="layui-input-block">
+                <input type="text" name="pending_amount" class="layui-input" lay-verify="required" placeholder="请输入待还金额" value="{$row.pending_amount|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">计划订单号</label>
+            <div class="layui-input-block">
+                <input type="text" name="plan_no" class="layui-input" lay-verify="required" placeholder="请输入计划订单号" value="{$row.plan_no|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">计划状态1未开始2取消3执行中4已完成</label>
+            <div class="layui-input-block">
+                <input type="text" name="plan_status" class="layui-input" lay-verify="required" placeholder="请输入计划状态1未开始2取消3执行中4已完成" value="{$row.plan_status|default=''}">
+            </div>
+        </div>
+        <div class="hr-line"></div>
+        <div class="layui-form-item text-center">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit>确认</button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">重置</button>
+        </div>
+
+    </form>
+</div>

@@ -23,4 +23,9 @@ class PlanDeal extends TimeModel
         return $this->belongsTo(User::class,'user_id','id');
     }
 
+    public function PlanDetails()
+    {
+        return $this->belongsTo(PlanDetails::class,'plan_details_id','id');
+    }
+
 }

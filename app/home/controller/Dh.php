@@ -21,7 +21,7 @@ use think\facade\Db;
 class Dh extends HomeController
 {
     //代还消费
-    public function pay($req,$user)
+    public function pay($req, $user)
     {
 //        $req = request()->param();
 //        $user = $this->user(request());
@@ -83,7 +83,7 @@ class Dh extends HomeController
     }
 
     //代还偿还
-    public function repay($req,$user)
+    public function repay($req, $user)
     {
 //        $req = request()->param();
 
@@ -194,7 +194,7 @@ class Dh extends HomeController
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
-                        'user_id'=>$user['id']
+                        'user_id' => $user['id']
                     ];
 
                     Db::name('plan_deal')->save($plan_deal_x);
@@ -207,7 +207,7 @@ class Dh extends HomeController
                         'trade_type' => 2,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
-                        'user_id'=>$user['id']
+                        'user_id' => $user['id']
                     ];
                     Db::name('plan_deal')->save($plan_deal_h);
                 } elseif ($req['repayment_mode'] == 2) {
@@ -221,7 +221,7 @@ class Dh extends HomeController
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
-                        'user_id'=>$user['id']
+                        'user_id' => $user['id']
                     ];
                     Db::name('plan_deal')->save($plan_deal_x);
                     $plan_deal_x = [
@@ -232,7 +232,7 @@ class Dh extends HomeController
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
-                        'user_id'=>$user['id']
+                        'user_id' => $user['id']
                     ];
                     Db::name('plan_deal')->save($plan_deal_x);
 
@@ -245,7 +245,7 @@ class Dh extends HomeController
                         'trade_type' => 2,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
-                        'user_id'=>$user['id']
+                        'user_id' => $user['id']
                     ];
                     Db::name('plan_deal')->save($plan_deal_h);
                 }
@@ -281,7 +281,7 @@ class Dh extends HomeController
     //执行计划消费
     public function planstart()
     {
-        $plan = PlanDeal::with(['card','user'])->where('trade_type', 1)->where('trade_status', 1)->select();
+        $plan = PlanDeal::with(['card', 'user', 'PlanDetails'])->where('trade_type', 1)->where('trade_status', 1)->select();
 
 //      dump($plan->toArray());
 
@@ -289,7 +289,7 @@ class Dh extends HomeController
             //消费参数
             $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
             if (time() > strtotime($v['trade_time'])) {
-                $a = $this->pay($arr,$v['user']);
+                $a = $this->pay($arr, $v['user']);
                 $res = PlanDeal::find($v['id']);
                 //写入交易返回
                 if ($a['code'] == 0) {
@@ -306,17 +306,20 @@ class Dh extends HomeController
     //执行还款消费
     public function planover()
     {
-        $plan = PlanDeal::with(['card','user'])->where('trade_type', 2)->where('trade_status', 1)->select();
+        $plan = PlanDeal::with(['card', 'user', 'PlanDetails'])->where('trade_type', 2)->where('trade_status', 1)->select();
 
         foreach ($plan as $k => $v) {
             //还款参数
             $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
             if (time() > strtotime($v['trade_time'])) {
-                $a = $this->repay($arr,$v['user']);
+                $a = $this->repay($arr, $v['user']);
                 $res = PlanDeal::find($v['id']);
                 //写入交易返回
                 if ($a['code'] == 0) {
                     $res->trade_status = 2;
+                    $plan = OrderPlan::find($v['PlanDetails']['plan_id']);
+                    $plan->pending_amount = $plan['pending_amount'] - $v['trade_amount'];
+                    $plan->save();
                 }
                 $res->message = json_encode($a, true);
                 $res->save();
@@ -324,6 +327,21 @@ class Dh extends HomeController
         }
 
         return 'over';
+    }
+
+    //还款记录
+    public function history()
+    {
+        $user = $this->user(request());
+        //获取当前日
+        $d = date('d', time());
+        $req = request()->param();
+        $order = OrderPlan::with(['details' => function (Query $query) {
+            $query->with(['deal']);
+        }, 'card'])->where('user_id', $user['id'])->where('plan_status', 1)->select()->toArray();
+
+        dump($order);
+        die;
     }
 
 

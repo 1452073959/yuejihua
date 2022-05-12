@@ -30,6 +30,22 @@ class Index extends HomeController
         return $a;
     }
 
+    public function pddcate()
+    {
+
+        $arr=[
+            'type'=>'pdd.goods.cats.get',
+            'client_id'=>'2e46e1e0b1394538960222e5fb1b9009',
+            'timestamp'=>time(),
+            'parent_cat_id'=>'0',
+        ];
+
+        $feemypay = new Pdd();
+        $a=  $feemypay->ceshi('pdd.goods.cats.get',$arr);
+
+        return $a;
+    }
+
     public function team()
     {
         $a=GetTeamMember('2');

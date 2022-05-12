@@ -295,7 +295,7 @@ class Dh extends HomeController
             }
 
         }
-        return 'over';
+        return 'start';
     }
 
     //执行还款消费

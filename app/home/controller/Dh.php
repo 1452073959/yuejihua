@@ -21,10 +21,10 @@ use think\facade\Db;
 class Dh extends HomeController
 {
     //代还消费
-    public function pay($req)
+    public function pay($req,$user)
     {
 //        $req = request()->param();
-        $user = $this->user(request());
+//        $user = $this->user(request());
         $out_trade_no = 'yjh' . date('Ymd') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);//订单号，自己生成
 //        dump($out_trade_no);die;
         $card = UserCard::where('card_no', $req['bankCardNo'])->find();
@@ -83,11 +83,11 @@ class Dh extends HomeController
     }
 
     //代还偿还
-    public function repay($req)
+    public function repay($req,$user)
     {
 //        $req = request()->param();
 
-        $user = $this->user(request());
+//        $user = $this->user(request());
         $card = UserCard::where('card_no', $req['bankCardNo'])->find();
         if (!$card) {
             return Result::Error('1000', '未找到该卡');
@@ -194,6 +194,7 @@ class Dh extends HomeController
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
+                        'user_id'=>$user['id']
                     ];
 
                     Db::name('plan_deal')->save($plan_deal_x);
@@ -206,6 +207,7 @@ class Dh extends HomeController
                         'trade_type' => 2,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
+                        'user_id'=>$user['id']
                     ];
                     Db::name('plan_deal')->save($plan_deal_h);
                 } elseif ($req['repayment_mode'] == 2) {
@@ -219,6 +221,7 @@ class Dh extends HomeController
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
+                        'user_id'=>$user['id']
                     ];
                     Db::name('plan_deal')->save($plan_deal_x);
                     $plan_deal_x = [
@@ -229,6 +232,7 @@ class Dh extends HomeController
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
+                        'user_id'=>$user['id']
                     ];
                     Db::name('plan_deal')->save($plan_deal_x);
 
@@ -241,6 +245,7 @@ class Dh extends HomeController
                         'trade_type' => 2,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
+                        'user_id'=>$user['id']
                     ];
                     Db::name('plan_deal')->save($plan_deal_h);
                 }
@@ -276,7 +281,7 @@ class Dh extends HomeController
     //执行计划消费
     public function planstart()
     {
-        $plan = PlanDeal::with('card')->where('trade_type', 1)->where('trade_status', 1)->select();
+        $plan = PlanDeal::with(['card','user'])->where('trade_type', 1)->where('trade_status', 1)->select();
 
 //      dump($plan->toArray());
 
@@ -284,7 +289,7 @@ class Dh extends HomeController
             //消费参数
             $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
             if (time() > strtotime($v['trade_time'])) {
-                $a = $this->pay($arr);
+                $a = $this->pay($arr,$v['user']);
                 $res = PlanDeal::find($v['id']);
                 //写入交易返回
                 if ($a['code'] == 0) {
@@ -301,13 +306,13 @@ class Dh extends HomeController
     //执行还款消费
     public function planover()
     {
-        $plan = PlanDeal::with('card')->where('trade_type', 2)->where('trade_status', 1)->select();
+        $plan = PlanDeal::with(['card','user'])->where('trade_type', 2)->where('trade_status', 1)->select();
 
         foreach ($plan as $k => $v) {
             //还款参数
             $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
             if (time() > strtotime($v['trade_time'])) {
-                $a = $this->repay($arr);
+                $a = $this->repay($arr,$v['user']);
                 $res = PlanDeal::find($v['id']);
                 //写入交易返回
                 if ($a['code'] == 0) {

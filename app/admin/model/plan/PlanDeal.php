@@ -2,6 +2,7 @@
 
 namespace app\admin\model\plan;
 
+use app\admin\model\admin\User;
 use app\admin\model\UserCard;
 use app\common\model\TimeModel;
 
@@ -15,6 +16,11 @@ class PlanDeal extends TimeModel
     public function card()
     {
         return $this->belongsTo(UserCard::class,'card_id','id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class,'user_id','id');
     }
 
 }

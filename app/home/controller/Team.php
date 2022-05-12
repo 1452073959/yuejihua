@@ -38,10 +38,10 @@ class Team extends HomeController
         $Internship_z_v3 = User::where('pid', $user['id'])->where('vip_label', '4')->count();
         $Internship_jz_v3 = User::where('pid', '<>', $user['id'])->where('vip_label', '4')->whereIn('id', $a)->count();
         $vip = [];
-        $vip['sx'] = [$Internship_z, $Internship_j];
-        $vip['v1'] = [$Internship_z_v1, $Internship_jz_v1];
-        $vip['v2'] = [$Internship_z_v2, $Internship_jz_v2];
-        $vip['v3'] = [$Internship_z_v3, $Internship_jz_v3];
+        $vip['sx'] = ['zt'=>$Internship_z, 'jt'=>$Internship_j];
+        $vip['v1'] = ['zt'=>$Internship_z_v1, 'jt'=>$Internship_jz_v1];
+        $vip['v2'] = ['zt'=>$Internship_z_v2, 'jt'=>$Internship_jz_v2];
+        $vip['v3'] = ['zt'=>$Internship_z_v3, 'jt'=>$Internship_jz_v3];
 
         return Result::Success(['teamnum' => $teamnum, 'directly' => $Directly, 'real_name' => $real_name, 'vip' => $vip]);
     }

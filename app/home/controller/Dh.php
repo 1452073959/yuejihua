@@ -10,6 +10,7 @@ namespace app\home\controller;
 
 use app\admin\model\pay\Order;
 use app\admin\model\plan\OrderPlan;
+use app\admin\model\plan\PlanDeal;
 use app\admin\model\UserCard;
 use app\home\help\Result;
 use app\home\help\Yjh;
@@ -20,22 +21,22 @@ use think\facade\Db;
 class Dh extends HomeController
 {
     //代还消费
-    public function pay()
+    public function pay($req)
     {
-        $req = request()->param();
+//        $req = request()->param();
         $user = $this->user(request());
         $out_trade_no = 'yjh' . date('Ymd') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);//订单号，自己生成
 //        dump($out_trade_no);die;
         $card = UserCard::where('card_no', $req['bankCardNo'])->find();
         if (!$card) {
-            return Result::Error('1000', '未找到该卡');
+            return '未找到该卡';
         }
 
         $reqData = [
             'bankCardNo' => $card['card_no'],//卡号
             'bindId' => $card['bindId'],//绑卡id
             'notifyUrl' => "https://tdnetwork.cn/api/notice/alipay1",//通知地址
-            'orderAmount' => $req['orderAmount'],//订单基金额
+            'orderAmount' => $req['orderAmount'] * 100,//订单基金额
             'orderNo' => $out_trade_no,//
             'rate' => 0.008,
             'subMerchantNo' => $user['subMerchantNo'],
@@ -54,12 +55,12 @@ class Dh extends HomeController
             $order->pay_status = 2;
             $order->message = $res['message'];
             $order->save();
-            return Result::Success($res, '成功');
+            return $res;
         } else {
             $order->pay_status = 1;
             $order->message = $res['message'];
             $order->save();
-            return Result::Error($res, '消费失败');
+            return $res;
         }
 
 
@@ -82,9 +83,10 @@ class Dh extends HomeController
     }
 
     //代还偿还
-    public function repay()
+    public function repay($req)
     {
-        $req = request()->param();
+//        $req = request()->param();
+
         $user = $this->user(request());
         $card = UserCard::where('card_no', $req['bankCardNo'])->find();
         if (!$card) {
@@ -94,8 +96,8 @@ class Dh extends HomeController
         $reqData = [
             "bankCardNo" => $card['card_no'],
             "bindId" => $card['bindId'],
-            "fee" => 150,
-            "orderAmount" => $req['orderAmount'],
+            "fee" => 100,
+            "orderAmount" => $req['orderAmount'] * 100,
             "orderNo" => $out_trade_no,
             "subMerchantNo" => $user['subMerchantNo'],
             'notifyUrl' => "https://tdnetwork.cn/api/notice/alipay1",//通知地址
@@ -107,11 +109,20 @@ class Dh extends HomeController
         $order->card_id = $card['id'];
         $order->user_id = $user['id'];
         $order->orderNo = $out_trade_no;
-        $order->fee = 150;
+        $order->fee = 100;
+        $order->orderAmount = $req['orderAmount'];
         $order->orderAmount = $req['orderAmount'];
         $order->save();
         if ($res['code'] == 0) {
-            return Result::Success($res, '成功');
+            $order->pay_status = 2;
+            $order->message = $res['message'];
+            $order->save();
+            return $res;
+        } else {
+            $order->pay_status = 1;
+            $order->message = $res['message'];
+            $order->save();
+            return $res;
         }
     }
 
@@ -163,8 +174,9 @@ class Dh extends HomeController
             $orderplanId = Db::name('order_plan')->insertGetId($orderplan);
             $req['repayment_date'] = explode('@', $req['repayment_date']);
 
+//            时间
+            $date = date('H', time());
             for ($i = 0; $i <= $req['plan_number'] - 1; $i++) {
-
                 $plan_details = [
                     'plan_id' => $orderplanId,
                     'plan_name' => 1 + $i . '笔',
@@ -173,20 +185,22 @@ class Dh extends HomeController
                 $plan_detailsid = Db::name('plan_details')->insertGetId($plan_details);
                 if ($req['repayment_mode'] == 1) {
                     //消费
+                    $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1;
                     $plan_deal_x = [
-                        'trade_amount' => $req['bill_amount'] / $req['plan_number'] + ($req['bill_amount'] / $req['plan_number'] * 0.008),
-                        'trade_time' => $req['repayment_date'][$i].' ' . '12:00:00',
+                        'trade_amount' => $money,
+                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':00:00'),
                         'actual_amount' => '0',
-                        'trade_fee' => $req['bill_amount'] / $req['plan_number'] * 0.008,
+                        'trade_fee' => $money - ($req['bill_amount'] / $req['plan_number']),
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
                     ];
+
                     Db::name('plan_deal')->save($plan_deal_x);
                     //还款
                     $plan_deal_h = [
                         'trade_amount' => $req['bill_amount'] / $req['plan_number'],
-                        'trade_time' => $req['repayment_date'][$i] .' '. '14:00:00',
+                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':30:00'),
                         'actual_amount' => $req['bill_amount'] / $req['plan_number'],
                         'trade_fee' => 1.00,
                         'trade_type' => 2,
@@ -195,22 +209,23 @@ class Dh extends HomeController
                     ];
                     Db::name('plan_deal')->save($plan_deal_h);
                 } elseif ($req['repayment_mode'] == 2) {
+                    $money = ceil($req['bill_amount'] / $req['plan_number'] / 2 / 0.992) + 0.5;
                     //消费
                     $plan_deal_x = [
-                        'trade_amount' => $req['bill_amount'] / $req['plan_number'] / 2 + ($req['bill_amount'] / $req['plan_number'] / 2 * 0.008),
-                        'trade_time' => $req['repayment_date'][$i] .' '. '12:00:00',
+                        'trade_amount' => $money,
+                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':00:00'),
                         'actual_amount' => '0',
-                        'trade_fee' => $req['bill_amount'] / $req['plan_number'] / 2 * 0.008,
+                        'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
                     ];
                     Db::name('plan_deal')->save($plan_deal_x);
                     $plan_deal_x = [
-                        'trade_amount' => $req['bill_amount'] / $req['plan_number'] / 2 + ($req['bill_amount'] / $req['plan_number'] / 2 * 0.008),
-                        'trade_time' => $req['repayment_date'][$i] .' '. '13:00:00',
+                        'trade_amount' => $money,
+                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':15:00'),
                         'actual_amount' => '0',
-                        'trade_fee' => $req['bill_amount'] / $req['plan_number'] / 2 * 0.008,
+                        'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
                         'trade_type' => 1,
                         'card_id' => $req['card_id'],//卡
                         'plan_details_id' => $plan_detailsid,
@@ -220,7 +235,7 @@ class Dh extends HomeController
                     //还款
                     $plan_deal_h = [
                         'trade_amount' => $req['bill_amount'] / $req['plan_number'],
-                        'trade_time' => $req['repayment_date'][$i] . '14:00:00',
+                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':30:00'),
                         'actual_amount' => $req['bill_amount'] / $req['plan_number'],
                         'trade_fee' => 1.00,
                         'trade_type' => 2,
@@ -235,7 +250,7 @@ class Dh extends HomeController
             // 提交事务
             Db::commit();
 
-            return Result::Success('','创建成功');
+            return Result::Success('', '创建成功');
         } catch (\Exception $e) {
             // 回滚事务
             Db::rollback();
@@ -250,11 +265,60 @@ class Dh extends HomeController
         //获取当前日
         $d = date('d', time());
         $req = request()->param();
-        $order=OrderPlan::with(['details'=>function(Query $query){
+        $order = OrderPlan::with(['details' => function (Query $query) {
             $query->with(['deal']);
-        },'card'])->where('user_id',$user['id'])->where('plan_status',1)->select();
+        }, 'card'])->where('user_id', $user['id'])->where('plan_status', 1)->select();
         dump($order->toArray());
 
+    }
+
+
+    //执行计划消费
+    public function planstart()
+    {
+        $plan = PlanDeal::with('card')->where('trade_type', 1)->where('trade_status', 1)->select();
+
+//      dump($plan->toArray());
+
+        foreach ($plan as $k => $v) {
+            //消费参数
+            $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
+            if (time() > strtotime($v['trade_time'])) {
+                $a = $this->pay($arr);
+                $res = PlanDeal::find($v['id']);
+                //写入交易返回
+                if ($a['code'] == 0) {
+                    $res->trade_status = 2;
+                }
+                $res->message = json_encode($a, true);
+                $res->save();
+            }
+
+        }
+        return 'over';
+    }
+
+    //执行还款消费
+    public function planover()
+    {
+        $plan = PlanDeal::with('card')->where('trade_type', 2)->where('trade_status', 1)->select();
+
+        foreach ($plan as $k => $v) {
+            //还款参数
+            $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
+            if (time() > strtotime($v['trade_time'])) {
+                $a = $this->repay($arr);
+                $res = PlanDeal::find($v['id']);
+                //写入交易返回
+                if ($a['code'] == 0) {
+                    $res->trade_status = 2;
+                }
+                $res->message = json_encode($a, true);
+                $res->save();
+            }
+        }
+
+        return 'over';
     }
 
 

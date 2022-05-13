@@ -8,7 +8,9 @@
 
 namespace app\home\controller;
 
+use app\admin\model\admin\User;
 use app\admin\model\pay\Order;
+use app\admin\model\pay\Profit;
 use app\admin\model\plan\OrderPlan;
 use app\admin\model\plan\PlanDeal;
 use app\admin\model\UserCard;
@@ -320,6 +322,9 @@ class Dh extends HomeController
                     $plan = OrderPlan::find($v['PlanDetails']['plan_id']);
                     $plan->pending_amount = $plan['pending_amount'] - $v['trade_amount'];
                     $plan->save();
+
+                    $p = User::find($v['user']['pid']);
+                    $d = $this->profit($p, $v['user']);
                 }
                 $res->message = json_encode($a, true);
                 $res->save();
@@ -342,6 +347,54 @@ class Dh extends HomeController
 
         dump($order);
         die;
+    }
+
+
+//    public function profit($p,$u,$trade_amount)
+    public function profit()
+    {
+//        if ($p['vip_label'] > $u['vip_label']) {
+//
+//            //v3
+//            if($p['vip_label']==4){
+//                if($u['vip_label']==2){
+//                    $profit_sum=((24-12)+1)/10000*$trade_amount;
+//                }
+//                if($u['vip_label']==3){
+//                    $profit_sum=((24-17)+1)/10000* $trade_amount;
+//                }
+//            }
+//            //v2
+//            if($p['vip_label']==3){
+//                if($u['vip_label']==2){
+//                    $profit_sum=((17-12)+1)/10000* $trade_amount;
+//                }
+//            }
+//        }
+        $u = User::find(7);
+
+        $user = explode(',', $u['user_pid']);
+        foreach (array_reverse($user) as $k => $v) {
+            $up=User::find($v);
+            dump($up->toArray());
+            if($up['vip_label']==4)
+
+        }
+
+
+        dump($user);
+        die;
+
+
+        $profit = new Profit();
+        $profit->user_id = $v['user']['pid'];
+        $profit->up_id = $v['user']['id'];
+        $profit->card_id = $v['card']['id'];
+        $profit->type = $v['user']['id'];
+        $profit->profit = $profit_sum;
+        $profit->amount = $v['trade_amount'];
+        $profit->tranTime = date('Y-m-d H:i:s', time());
+        $profit->describe = $v['user']['name'] . '还款' . $v['trade_amount'] . '分润';
     }
 
 

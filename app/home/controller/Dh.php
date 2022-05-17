@@ -173,24 +173,30 @@ class Dh extends HomeController
                 'plan_number' => $req['plan_number'],//还款次数
                 'plan_no' => 'jihua' . date('Ymd') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT)//单号
             ];
+//            dump($orderplan);die;
             $orderplanId = Db::name('order_plan')->insertGetId($orderplan);
+
+
             $req['repayment_date'] = explode('@', $req['repayment_date']);
 
 //            时间
             $date = date('H', time());
+            $plan_deal_h = [];
+            $plan_deal_x = [];
             for ($i = 0; $i <= $req['plan_number'] - 1; $i++) {
                 $plan_details = [
                     'plan_id' => $orderplanId,
                     'plan_name' => 1 + $i . '笔',
                     'card_id' => $req['card_id'],//卡
                 ];
+
                 $plan_detailsid = Db::name('plan_details')->insertGetId($plan_details);
                 if ($req['repayment_mode'] == 1) {
                     //消费
                     $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1;
                     $plan_deal_x = [
                         'trade_amount' => $money,
-                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':00:00'),
+                        'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + ((1 + $i) * 900)),
                         'actual_amount' => '0',
                         'trade_fee' => $money - ($req['bill_amount'] / $req['plan_number']),
                         'trade_type' => 1,
@@ -198,12 +204,11 @@ class Dh extends HomeController
                         'plan_details_id' => $plan_detailsid,
                         'user_id' => $user['id']
                     ];
-
                     Db::name('plan_deal')->save($plan_deal_x);
                     //还款
                     $plan_deal_h = [
                         'trade_amount' => $req['bill_amount'] / $req['plan_number'],
-                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':30:00'),
+                        'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
                         'actual_amount' => $req['bill_amount'] / $req['plan_number'],
                         'trade_fee' => 1.00,
                         'trade_type' => 2,
@@ -215,9 +220,10 @@ class Dh extends HomeController
                 } elseif ($req['repayment_mode'] == 2) {
                     $money = ceil($req['bill_amount'] / $req['plan_number'] / 2 / 0.992) + 0.5;
                     //消费
-                    $plan_deal_x = [
+                    dump($i);
+                    $plan_deal_x1 = [
                         'trade_amount' => $money,
-                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':00:00'),
+                        'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + ((1 + $i) * 900)),
                         'actual_amount' => '0',
                         'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
                         'trade_type' => 1,
@@ -225,10 +231,11 @@ class Dh extends HomeController
                         'plan_details_id' => $plan_detailsid,
                         'user_id' => $user['id']
                     ];
-                    Db::name('plan_deal')->save($plan_deal_x);
-                    $plan_deal_x = [
+                    dump($plan_deal_x1);
+                    Db::name('plan_deal')->save($plan_deal_x1);
+                    $plan_deal_x2 = [
                         'trade_amount' => $money,
-                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':15:00'),
+                        'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
                         'actual_amount' => '0',
                         'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
                         'trade_type' => 1,
@@ -236,12 +243,12 @@ class Dh extends HomeController
                         'plan_details_id' => $plan_detailsid,
                         'user_id' => $user['id']
                     ];
-                    Db::name('plan_deal')->save($plan_deal_x);
-
+                    Db::name('plan_deal')->save($plan_deal_x2);
+                    dump($plan_deal_x2);
                     //还款
                     $plan_deal_h = [
                         'trade_amount' => $req['bill_amount'] / $req['plan_number'],
-                        'trade_time' => $req['repayment_date'][$i] . ' ' . (1 + $i + $date . ':30:00'),
+                        'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
                         'actual_amount' => $req['bill_amount'] / $req['plan_number'],
                         'trade_fee' => 1.00,
                         'trade_type' => 2,
@@ -249,6 +256,7 @@ class Dh extends HomeController
                         'plan_details_id' => $plan_detailsid,
                         'user_id' => $user['id']
                     ];
+                    dump($plan_deal_h);
                     Db::name('plan_deal')->save($plan_deal_h);
                 }
             }
@@ -288,20 +296,30 @@ class Dh extends HomeController
 //      dump($plan->toArray());
 
         foreach ($plan as $k => $v) {
-            //消费参数
-            $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
-            if (time() > strtotime($v['trade_time'])) {
-                $a = $this->pay($arr, $v['user']);
-                $res = PlanDeal::find($v['id']);
-                //写入交易返回
-                if ($a['code'] == 0) {
-                    $res->trade_status = 2;
+            // 启动事务
+            Db::startTrans();
+            try {
+                //消费参数
+                $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
+                if (time() > strtotime($v['trade_time'])) {
+                    $a = $this->pay($arr, $v['user']);
+                    $res = PlanDeal::find($v['id']);
+                    //写入交易返回
+                    if ($a['code'] == 0) {
+                        $res->trade_status = 2;
+                    }
+                    $res->message = json_encode($a, true);
+                    $res->save();
                 }
-                $res->message = json_encode($a, true);
-                $res->save();
+                // 提交事务
+                Db::commit();
+            } catch (\Exception $e) {
+                // 回滚事务
+                Db::rollback();
             }
 
         }
+
         return 'start';
     }
 
@@ -311,24 +329,35 @@ class Dh extends HomeController
         $plan = PlanDeal::with(['card', 'user', 'PlanDetails'])->where('trade_type', 2)->where('trade_status', 1)->select();
 
         foreach ($plan as $k => $v) {
-            //还款参数
-            $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
-            if (time() > strtotime($v['trade_time'])) {
-                $a = $this->repay($arr, $v['user']);
-                $res = PlanDeal::find($v['id']);
-                //写入交易返回
-                if ($a['code'] == 0) {
-                    $res->trade_status = 2;
-                    $plan = OrderPlan::find($v['PlanDetails']['plan_id']);
-                    $plan->pending_amount = $plan['pending_amount'] - $v['trade_amount'];
-                    $plan->save();
-
-                    $p = User::find($v['user']['pid']);
-                    $d = $this->profit($p, $v['user']);
+            // 启动事务
+            Db::startTrans();
+            try {
+                //还款参数
+                $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
+                if (time() > strtotime($v['trade_time'])) {
+//                $a = $this->repay($arr, $v['user']);
+                    $a = ['code' => 0];
+                    $res = PlanDeal::find($v['id']);
+                    //写入交易返回
+                    if ($a['code'] == 0) {
+                        $res->trade_status = 2;
+                        //计划剩余还款金额
+                        $plan = OrderPlan::find($v['PlanDetails']['plan_id']);
+                        $plan->pending_amount = $plan['pending_amount'] - $v['trade_amount'];
+                        $plan->save();
+                        //分润
+                        $d = $this->profit($v['user']['id'], $arr, $v['id']);
+                    }
+                    $res->message = json_encode($a, true);
+                    $res->save();
                 }
-                $res->message = json_encode($a, true);
-                $res->save();
+                // 提交事务
+                Db::commit();
+            } catch (\Exception $e) {
+                // 回滚事务
+                Db::rollback();
             }
+
         }
 
         return 'over';
@@ -350,51 +379,246 @@ class Dh extends HomeController
     }
 
 
-//    public function profit($p,$u,$trade_amount)
-    public function profit()
+    public function profit($u, $arr, $plandeal_id)
     {
-//        if ($p['vip_label'] > $u['vip_label']) {
-//
-//            //v3
-//            if($p['vip_label']==4){
-//                if($u['vip_label']==2){
-//                    $profit_sum=((24-12)+1)/10000*$trade_amount;
-//                }
-//                if($u['vip_label']==3){
-//                    $profit_sum=((24-17)+1)/10000* $trade_amount;
-//                }
-//            }
-//            //v2
-//            if($p['vip_label']==3){
-//                if($u['vip_label']==2){
-//                    $profit_sum=((17-12)+1)/10000* $trade_amount;
-//                }
-//            }
-//        }
-        $u = User::find(7);
+        $u = User::find($u);
 
-        $user = explode(',', $u['user_pid']);
-        foreach (array_reverse($user) as $k => $v) {
-            $up=User::find($v);
-            dump($up->toArray());
-            if($up['vip_label']==4)
+        $a = explode(',', $u['user_pid']);
+
+        $apid = array_reverse($a);
+        $statusv3 = true;
+        $statusv2 = true;
+
+
+        //如果本级是v1
+        if ($u['vip_label'] == 2) {
+            //当前12+1
+            $profit = [
+                'user_id' => $u['id'],//当前用户
+                'rate' => 12 + 1,//费率
+                'plan_deal_id' => $plandeal_id,//计划id
+                'card_no' => $arr['bankCardNo'],
+                'type' => 1,
+                'amount' => $arr['orderAmount'],
+                'profit' => $arr['orderAmount'] * (13 / 10000),
+                'tranTime' => date('Y-m-d H:i:s', time()),
+                'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+            ];
+            Profit::create($profit);
+            foreach ($apid as $k => $v) {
+
+                $n = User::find($v);
+                //v3
+                if ($n['vip_label'] == 4) {
+
+                    dump($statusv2);
+                    dump($statusv3);
+                    if ($statusv2 && $statusv3) {
+                        //当前第一次出现v3
+                        $profit = [
+                            'user_id' => $n['id'],
+                            'rate' => (24 - 12) + 1,
+                            'plan_deal_id' => $plandeal_id,//计划id
+                            'card_no' => $arr['bankCardNo'],
+                            'type' => 1,
+                            'amount' => $arr['orderAmount'],
+                            'profit' => $arr['orderAmount'] * (13 / 10000),
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                        ];
+                        Profit::create($profit);
+                        //出现v3后更改状态
+                        $statusv3 = false;
+                    } elseif ($statusv2 == false && $statusv3) {
+                        $profit = [
+                            'user_id' => $n['id'],
+                            'rate' => (24 - 17) + 1,
+                            'plan_deal_id' => $plandeal_id,//计划id
+                            'card_no' => $arr['bankCardNo'],
+                            'type' => 1,
+                            'amount' => $arr['orderAmount'],
+                            'profit' => $arr['orderAmount'] * (8 / 10000),
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                        ];
+                        dump($profit);
+                        $statusv3 = false;
+                        Profit::create($profit);
+                    } else {
+                        $profit = [
+                            'user_id' => $n['id'],
+                            'rate' => 1,
+                            'plan_deal_id' => $plandeal_id,//计划id
+                            'card_no' => $arr['bankCardNo'],
+                            'type' => 1,
+                            'amount' => $arr['orderAmount'],
+                            'profit' => $arr['orderAmount'] * (1 / 10000),
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                        ];
+                        Profit::create($profit);
+                    }
+                }
+                //v2
+                if ($n['vip_label'] == 3) {
+                    //v2第一次出现并且v3没出现过
+                    if ($statusv2 && $statusv3) {
+                        //当前第一次出现v2
+                        $profit = [
+                            'user_id' => $n['id'],
+                            'rate' => (17 - 12) + 1,
+                            'plan_deal_id' => $plandeal_id,//计划id
+                            'card_no' => $arr['bankCardNo'],
+                            'type' => 1,
+                            'amount' => $arr['orderAmount'],
+                            'profit' => $arr['orderAmount'] * (6 / 10000),
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                        ];
+                        Profit::create($profit);
+                        //  出现v2后更改v2状态
+                        $statusv2 = false;
+                    } else {
+                        $profit = [
+                            'user_id' => $n['id'],
+                            'rate' => 1,
+                            'plan_deal_id' => $plandeal_id,//计划id
+                            'card_no' => $arr['bankCardNo'],
+                            'type' => 1,
+                            'amount' => $arr['orderAmount'],
+                            'profit' => $arr['orderAmount'] * (1 / 10000),
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                        ];
+                        Profit::create($profit);
+                    }
+                }
+                //v1全部是1
+                if ($n['vip_label'] == 2) {
+                    $profit = [
+                        'user_id' => $n['id'],
+                        'rate' => 1,
+                        'plan_deal_id' => $plandeal_id,//计划id
+                        'card_no' => $arr['bankCardNo'],
+                        'type' => 1,
+                        'amount' => $arr['orderAmount'],
+                        'profit' => $arr['orderAmount'] * (1 / 10000),
+                        'tranTime' => date('Y-m-d H:i:s', time()),
+                        'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                    ];
+                    Profit::create($profit);
+                }
+            }
+
+            //第一次
+        }
+
+        //本级v2
+        if ($u['vip_label'] == 3) {
+            //本级
+            $profit = [
+                'user_id' => $u['id'],
+                'rate' => 17 + 1,
+                'plan_deal_id' => $plandeal_id,//计划id
+                'card_no' => $arr['bankCardNo'],
+                'type' => 1,
+                'amount' => $arr['orderAmount'],
+                'profit' => $arr['orderAmount'] * (18 / 10000),
+                'tranTime' => date('Y-m-d H:i:s', time()),
+                'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+            ];
+            Profit::create($profit);
+
+            foreach ($apid as $k => $v) {
+                $n = User::find($v);
+                //定义状态
+
+                if ($n['vip_label'] == 4) {
+                    if ($statusv3) {
+                        $profit = [
+                            'user_id' => $n['id'],
+                            'rate' => (24 - 17) + 1,
+                            'plan_deal_id' => $plandeal_id,//计划id
+                            'card_no' => $arr['bankCardNo'],
+                            'type' => 1,
+                            'amount' => $arr['orderAmount'],
+                            'profit' => $arr['orderAmount'] * (8 / 10000),
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+
+                        ];
+
+                        Profit::create($profit);
+                        $statusv3 = false;
+                    } else {
+                        $profit = [
+                            'user_id' => $n['id'],
+                            'rate' => 1,
+                            'plan_deal_id' => $plandeal_id,//计划id
+                            'card_no' => $arr['bankCardNo'],
+                            'type' => 1,
+                            'amount' => $arr['orderAmount'],
+                            'profit' => $arr['orderAmount'] * (1 / 10000),
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                        ];
+                        Profit::create($profit);
+                    }
+                }
+                if ($n['vip_label'] == 3 || $n['vip_label'] == 2) {
+                    $profit = [
+                        'user_id' => $n['id'],
+                        'rate' => 1,
+                        'plan_deal_id' => $plandeal_id,//计划id
+                        'card_no' => $arr['bankCardNo'],
+                        'type' => 1,
+                        'amount' => $arr['orderAmount'],
+                        'profit' => $arr['orderAmount'] * (1 / 10000),
+                        'tranTime' => date('Y-m-d H:i:s', time()),
+                        'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                    ];
+
+                    Profit::create($profit);
+                }
+            }
+        }
+
+        //本级v3
+        if ($u['vip_label'] == 4) {
+            //本级
+            $profit = [
+                'user_id' => $u['id'],
+                'rate' => 24 + 1,
+                'plan_deal_id' => $plandeal_id,//计划id
+                'card_no' => $arr['bankCardNo'],
+                'type' => 1,
+                'amount' => $arr['orderAmount'],
+                'profit' => $arr['orderAmount'] * (25 / 10000),
+                'tranTime' => date('Y-m-d H:i:s', time()),
+                'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+            ];
+            Profit::create($profit);
+
+            foreach ($apid as $k => $v) {
+                $n = User::find($v);
+                $profit = [
+                    'user_id' => $n['id'],
+                    'rate' => 1,
+                    'plan_deal_id' => $plandeal_id,//计划id
+                    'card_no' => $arr['bankCardNo'],
+                    'type' => 1,
+                    'amount' => $arr['orderAmount'],
+                    'profit' => $arr['orderAmount'] * (1 / 10000),
+                    'tranTime' => date('Y-m-d H:i:s', time()),
+                    'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
+                ];
+                dump($profit);
+                Profit::create($profit);
+            }
 
         }
 
-
-        dump($user);
-        die;
-
-
-        $profit = new Profit();
-        $profit->user_id = $v['user']['pid'];
-        $profit->up_id = $v['user']['id'];
-        $profit->card_id = $v['card']['id'];
-        $profit->type = $v['user']['id'];
-        $profit->profit = $profit_sum;
-        $profit->amount = $v['trade_amount'];
-        $profit->tranTime = date('Y-m-d H:i:s', time());
-        $profit->describe = $v['user']['name'] . '还款' . $v['trade_amount'] . '分润';
+        return 'ok';
     }
 
 

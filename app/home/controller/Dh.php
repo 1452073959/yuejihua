@@ -335,8 +335,8 @@ class Dh extends HomeController
                 //还款参数
                 $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
                 if (time() > strtotime($v['trade_time'])) {
-//                $a = $this->repay($arr, $v['user']);
-                    $a = ['code' => 0];
+                $a = $this->repay($arr, $v['user']);
+//                    $a = ['code' => 0];
                     $res = PlanDeal::find($v['id']);
                     //写入交易返回
                     if ($a['code'] == 0) {

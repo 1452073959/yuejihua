@@ -4,6 +4,7 @@ declare (strict_types=1);
 namespace app\home\controller;
 
 use app\admin\model\UserCard;
+use app\home\help\Dhxe;
 use app\home\help\Result;
 use app\home\help\Yjh;
 use app\HomeController;
@@ -28,11 +29,13 @@ class Card extends HomeController
         $card->tel = $req['tel'];
         $card->bill_date = $req['bill_date'];
         $card->repayment_date = $req['repayment_date'];
+        $card->idCardNo = $req['idCardNo'];
+        $card->card_name = $req['card_name'];
         $card->cvn2 = $req['cvn2'];
         $card->expiration_date = $req['expiration_date'];
         $card->save();
 
-        return Result::Success($card);
+        return Result::Success($card,'成功');
     }
 
     public function card_list()
@@ -74,6 +77,8 @@ class Card extends HomeController
 //        dump($res);
         if ($res['code'] == 0) {
             $user->subMerchantNo = $res['subMerchantNo'];
+            $user->idCardNo = $req['idCardNo'];
+            $user->name = $req['idCardName'];
             $user->save();
             return Result::Success($res, $res['message']);
         } else {
@@ -108,6 +113,8 @@ class Card extends HomeController
                 'cvn' => $req['cvn'],
                 'expire' => $req['expire']
             ];
+
+//            dump($reqData);die;
             $a = new Yjh();
             $res = $a->bindCard($reqData);
 
@@ -117,28 +124,24 @@ class Card extends HomeController
                 if (!$card) {
                     $card = new UserCard();
                 }
-                    $card->user_id = $user['id'];
-                    $card->card_type = 2;
-                    $card->card_no = $req['bankCardNo'];
-                    $card->bank_logo = '';
-                    $card->bank = $req['bankSubName'];
-                    $card->tel = $req['bankCardPhoneNo'];
-                    $card->bindCardType = $req['bindCardType'];
-                    $card->bill_date =$req['bill_date'];
-                    $card->repayment_date =$req['repayment_date'];
-                    $card->cvn2 = $req['cvn'];
-                    $card->bankCode = $bankcode['bank_code'];
-                    $card->bindId = $res['bindId'];
-                    $card->expiration_date = $req['expire'];
-                    $card->idCardNo = $req['idCardNo'];
-                    $card->save();
+                $card->user_id = $user['id'];
+                $card->card_type = 2;
+                $card->card_no = $req['bankCardNo'];
+                $card->bank_logo = '';
+                $card->bank = $req['bankSubName'];
+                $card->tel = $req['bankCardPhoneNo'];
+                $card->bindCardType = $req['bindCardType'];
+                $card->bankCode = $bankcode['bank_code'];
+                $card->bindId = $res['bindId'];
+                $card->expiration_date = $req['expire'];
+                $card->idCardNo = $req['idCardNo'];
+                $card->save();
 
                 // 提交事务
                 Db::commit();
                 return Result::Success($res, $res['message']);
-
-            }else{
-                return Result::Error($res, $res['message']);
+            } else {
+                return Result::Error($res, $res['errorMessage']);
             }
 
         } catch (\Exception $e) {
@@ -150,70 +153,116 @@ class Card extends HomeController
 
     }
 
-
-    //短信确认
-    public function confirmCard()
+    public function bindcard2()
     {
-        $a = new Yjh();
-        $req = request()->param();
-        if (!isset($req['smsCode'])) {
-            return Result::Error(1000, '请输入验证码');
-        }
+        $a = new Dhxe();
         $user = $this->user(request());
-        $card = UserCard::where('card_no', $req['bankCardNo'])->find();
-        $reqData = [
-            'bankCardNo' => $req['bankCardNo'],
-            'idCardNo' => $card['idCardNo'],
-            'bindCardType' => $card['bindCardType'],
-            'bindId' => $card['bindId'],
-            'smsCode' => $req['smsCode'],
-            'subMerchantNo' => $user['subMerchantNo']
+        $req = request()->param();
+        $out_trade_no = date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'orderNo' => $out_trade_no,//订单号
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt04',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'cvn' => $card['cvn2'],//cvn
+            'validDate' => $card['expiration_date']//卡有效期
         ];
-        $res = $a->signSmsConfirm($reqData);
-        if ($res['code'] == 0) {
-            $card->Signing_status == 2;
-            $card->save();
-            return Result::Success($res, $res['message']);
-        }
 
-        return Result::Error(1000, $res['message']);
-
+        $res = $a->bindCard($data);
+       return Result::Success($res[1]['content'],$res[1]['resMsg']);
+    }
+    //短信通知
+    public function bindConfirm2()
+    {
+        $a = new Dhxe();
+        $user = $this->user(request());
+        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'orderNo' => $req['orderNo'],//订单号
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt04',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'cvn' => $card['cvn2'],//cvn
+            'validDate' => $card['expiration_date'],//卡有效期
+            'smsCode' => $req['smsCode']//短信验证码
+        ];
+        $res = $a->bindConfirm($data);
+        dump($res);
+        return Result::Success($res[1]['content'],$res[1]['resMsg']);
+    }
+    //代付
+    public function payOrderCreate()
+    {
+        $a = new Dhxe();
+        $user = $this->user(request());
+        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $out_trade_no = 'xf'.date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $data = [
+            'orderNo' => $out_trade_no,//订单号
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt04',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'orderAmount' => $req['orderAmount'],//代付金额
+            'rate' => 0.6,//手续费
+            'city' => '武汉',//手续费
+            'cvn' => $card['cvn2'],//cvn
+            'validDate' => $card['expiration_date'],//卡有效期
+            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
+        ];
+        $res = $a->payOrderCreate($data);
+        return Result::Success($res[1]['content'],$res[1]['resMsg']);
     }
 
-    //查询绑卡
-    public function queryBindCard()
+
+    //代还
+    public function transferCreate()
     {
-        $req = request()->param();
+        $a = new Dhxe();
         $user = $this->user(request());
-        $card = UserCard::where('card_no', $req['bankCardNo'])->find();
-        $reqData = [
-            'subMerchantNo' => $user['subMerchantNo'],
-            'bankCardNo' => $card['card_no'],
-            'bindId' => $card['bindId']
+        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $out_trade_no = 'xf'.date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $data = [
+            'orderNo' => $out_trade_no,//订单号
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt04',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'orderAmount' => $req['orderAmount'],//代付金额
+            'feeAmount' => 1,//手续费
+            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
-        $a = new Yjh();
-        $res = $a->queryBindCard($reqData);
-        if ($res['code'] == 0) {
-            return Result::Success($res, '当前状态绑卡为'.$res['bindCardStatus']);
-        }
+        $res = $a->transferCreate($data);
+        dump($res);
+        return Result::Success($res[1]['content'],$res[1]['resMsg']);
     }
+
+
 
     //查询余额
-    public function queryBalance()
+    public function balanceQuery()
     {
-        $req = request()->param();
+        $a = new Dhxe();
         $user = $this->user(request());
-        $card = UserCard::where('card_no', $req['bankCardNo'])->find();
-        $reqData = [
-            "subMerchantNo" =>$user['subMerchantNo'],
-            "bindId" => $card['bindId']
+        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'cardNo' => $card['idCardNo'],//订单号
+            'agencyCode' => 'xt04',//通道编码
         ];
-        $a = new Yjh();
-        $res = $a->queryBalance($reqData);
-        if($res['code']==0){
-            return Result::Success($res);
-        }
-        dump($res);
+        $res = $a->balanceQuery($data);
+//        dump($res);die;
+        return Result::Success($res[1]['content'],$res[1]['resMsg']);
     }
 
 }

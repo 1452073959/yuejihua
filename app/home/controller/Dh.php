@@ -15,134 +15,81 @@ use app\admin\model\plan\OrderPlan;
 use app\admin\model\plan\PlanDeal;
 use app\admin\model\UserCard;
 use app\home\help\Result;
-use app\home\help\Yjh;
+use app\home\help\Dhxe;
 use app\HomeController;
 use think\db\Query;
 use think\facade\Db;
 
 class Dh extends HomeController
 {
-    //代还消费
-    public function pay($req, $user)
+    //代付
+    public function payOrderCreate($req)
     {
-//        $req = request()->param();
-//        $user = $this->user(request());
-        $out_trade_no = 'yjh' . date('Ymd') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);//订单号，自己生成
-//        dump($out_trade_no);die;
-        $card = UserCard::where('card_no', $req['bankCardNo'])->find();
-        if (!$card) {
-            return '未找到该卡';
-        }
-
-        $reqData = [
-            'bankCardNo' => $card['card_no'],//卡号
-            'bindId' => $card['bindId'],//绑卡id
-            'notifyUrl' => "https://tdnetwork.cn/api/notice/alipay1",//通知地址
-            'orderAmount' => $req['orderAmount'] * 100,//订单基金额
-            'orderNo' => $out_trade_no,//
-            'rate' => 0.008,
-            'subMerchantNo' => $user['subMerchantNo'],
-            'cityId' => "420600"
-        ];
-        $a = new Yjh();
-        $res = $a->pay($reqData);
-        $order = new Order();
-        $order->card_id = $card['id'];
-        $order->user_id = $user['id'];
-        $order->orderNo = $out_trade_no;
-        $order->rate = 0.008;
-        $order->orderAmount = $req['orderAmount'];
-
-        if ($res['code'] == 0) {
-            $order->pay_status = 2;
-            $order->message = $res['message'];
-            $order->save();
-            return $res;
-        } else {
-            $order->pay_status = 1;
-            $order->message = $res['message'];
-            $order->save();
-            return $res;
-        }
-
-
-    }
-
-    //代还查询(消费
-    public function consumePayCheck()
-    {
-        $req = request()->param();
+        $a = new Dhxe();
         $user = $this->user(request());
-        $postData = [
-            'orderNo' => $req['orderNo'],
-            'subMerchantNo' => $user['subMerchantNo']
-        ];
-        $a = new Yjh();
-        $res = $a->consumePayCheck($postData);
-        if ($res['code'] == 0) {
-            return Result::Success($res, '成功');
-        }
-    }
-
-    //代还偿还
-    public function repay($req, $user)
-    {
 //        $req = request()->param();
-
-//        $user = $this->user(request());
-        $card = UserCard::where('card_no', $req['bankCardNo'])->find();
-        if (!$card) {
-            return Result::Error('1000', '未找到该卡');
-        }
-        $out_trade_no = 'yjh' . date('Ymd') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);//订单号，自己生成
-        $reqData = [
-            "bankCardNo" => $card['card_no'],
-            "bindId" => $card['bindId'],
-            "fee" => 100,
-            "orderAmount" => $req['orderAmount'] * 100,
-            "orderNo" => $out_trade_no,
-            "subMerchantNo" => $user['subMerchantNo'],
-            'notifyUrl' => "https://tdnetwork.cn/api/notice/alipay1",//通知地址
+        $card = UserCard::where('id', $req['id'])->find();
+        $out_trade_no = 'xf'.date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $data = [
+            'orderNo' => $out_trade_no,//订单号
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt04',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'orderAmount' => $req['orderAmount'],//代付金额
+            'rate' => 0.8,//手续费
+            'city' => '武汉',//手续费
+            'cvn' => $card['cvn2'],//cvn
+            'validDate' => $card['expiration_date'],//卡有效期
+            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
-        $a = new Yjh();
-        $res = $a->repay($reqData);
-        $order = new Order();
-        $order->order_type = 2;
-        $order->card_id = $card['id'];
-        $order->user_id = $user['id'];
-        $order->orderNo = $out_trade_no;
-        $order->fee = 100;
-        $order->orderAmount = $req['orderAmount'];
-        $order->orderAmount = $req['orderAmount'];
-        $order->save();
-        if ($res['code'] == 0) {
-            $order->pay_status = 2;
-            $order->message = $res['message'];
-            $order->save();
-            return $res;
-        } else {
-            $order->pay_status = 1;
-            $order->message = $res['message'];
-            $order->save();
-            return $res;
-        }
+        $res = $a->payOrderCreate($data);
+        return $res;
     }
 
-    //偿还查询
-    public function queryrepay()
+
+    //代还
+    public function transferCreate($req)
     {
-        $req = request()->param();
+        $a = new Dhxe();
         $user = $this->user(request());
-        $postData = [
-            'orderNo' => $req['orderNo'],
-            'subMerchantNo' => $user['subMerchantNo']
+//        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $out_trade_no = 'hk'.date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $data = [
+            'orderNo' => $out_trade_no,//订单号
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt04',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'orderAmount' => $req['orderAmount'],//代付金额
+            'feeAmount' => 1,//手续费
+            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
-        $a = new Yjh();
-        $res = $a->queryrepay($postData);
-        if ($res['code'] == 0) {
-            return Result::Success($res, '成功');
-        }
+        $res = $a->transferCreate($data);
+        return $res;
     }
+
+
+
+    //查询余额
+    public function balanceQuery()
+    {
+        $a = new Dhxe();
+        $user = $this->user(request());
+        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'cardNo' => $card['idCardNo'],//订单号
+            'agencyCode' => 'xt04',//通道编码
+        ];
+        $res = $a->balanceQuery($data);
+//        dump($res);die;
+        return Result::Success($res[1]['content'],$res[1]['resMsg']);
+    }
+
 
 //        还款计划
 //金额,笔数,
@@ -183,6 +130,8 @@ class Dh extends HomeController
             $date = date('H', time());
             $plan_deal_h = [];
             $plan_deal_x = [];
+//            dump($req['repayment_date']);die;
+
             for ($i = 0; $i <= $req['plan_number'] - 1; $i++) {
                 $plan_details = [
                     'plan_id' => $orderplanId,
@@ -194,70 +143,146 @@ class Dh extends HomeController
                 if ($req['repayment_mode'] == 1) {
                     //消费
                     $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1;
-                    $plan_deal_x = [
-                        'trade_amount' => $money,
-                        'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + ((1 + $i) * 900)),
-                        'actual_amount' => '0',
-                        'trade_fee' => $money - ($req['bill_amount'] / $req['plan_number']),
-                        'trade_type' => 1,
-                        'card_id' => $req['card_id'],//卡
-                        'plan_details_id' => $plan_detailsid,
-                        'user_id' => $user['id']
-                    ];
-                    Db::name('plan_deal')->save($plan_deal_x);
-                    //还款
-                    $plan_deal_h = [
-                        'trade_amount' => $req['bill_amount'] / $req['plan_number'],
-                        'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
-                        'actual_amount' => $req['bill_amount'] / $req['plan_number'],
-                        'trade_fee' => 1.00,
-                        'trade_type' => 2,
-                        'card_id' => $req['card_id'],//卡
-                        'plan_details_id' => $plan_detailsid,
-                        'user_id' => $user['id']
-                    ];
-                    Db::name('plan_deal')->save($plan_deal_h);
+                    //日期
+                    dump($req['repayment_date'][$i]);
+                    //最后一个日期
+                    $next=isset($req['repayment_date'][$i+1])?$req['repayment_date'][$i+1]:$req['repayment_date'][$i];
+                    if($req['repayment_date'][$i]==$next){
+                        $plan_deal_x = [
+                            'trade_amount' => $money,
+                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + ((1 + $i) * 900)),
+                            'actual_amount' => '0',
+                            'trade_fee' => $money - ($req['bill_amount'] / $req['plan_number']),
+                            'trade_type' => 1,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        Db::name('plan_deal')->save($plan_deal_x);
+                        //还款
+                        $plan_deal_h = [
+                            'trade_amount' => ($req['bill_amount'] / $req['plan_number'])+1,
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
+                            'actual_amount' => $req['bill_amount'] / $req['plan_number'],
+                            'trade_fee' => 1.00,
+                            'trade_type' => 2,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        Db::name('plan_deal')->save($plan_deal_h);
+                    }else{
+                        $plan_deal_x = [
+                            'trade_amount' => $money,
+                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + ((1 + $i) * 900)),
+                            'actual_amount' => '0',
+                            'trade_fee' => $money - ($req['bill_amount'] / $req['plan_number']),
+                            'trade_type' => 1,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        Db::name('plan_deal')->save($plan_deal_x);
+                        //还款
+                        $plan_deal_h = [
+                            'trade_amount' => ($req['bill_amount'] / $req['plan_number'])+1,
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
+                            'actual_amount' => $req['bill_amount'] / $req['plan_number'],
+                            'trade_fee' => 1.00,
+                            'trade_type' => 2,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        Db::name('plan_deal')->save($plan_deal_h);
+                        $plan_deal_h = [];//重新开始计算
+                    }
+
                 } elseif ($req['repayment_mode'] == 2) {
                     $money = ceil($req['bill_amount'] / $req['plan_number'] / 2 / 0.992) + 0.5;
                     //消费
-                    dump($i);
-                    $plan_deal_x1 = [
-                        'trade_amount' => $money,
-                        'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + ((1 + $i) * 900)),
-                        'actual_amount' => '0',
-                        'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
-                        'trade_type' => 1,
-                        'card_id' => $req['card_id'],//卡
-                        'plan_details_id' => $plan_detailsid,
-                        'user_id' => $user['id']
-                    ];
-                    dump($plan_deal_x1);
-                    Db::name('plan_deal')->save($plan_deal_x1);
-                    $plan_deal_x2 = [
-                        'trade_amount' => $money,
-                        'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
-                        'actual_amount' => '0',
-                        'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
-                        'trade_type' => 1,
-                        'card_id' => $req['card_id'],//卡
-                        'plan_details_id' => $plan_detailsid,
-                        'user_id' => $user['id']
-                    ];
-                    Db::name('plan_deal')->save($plan_deal_x2);
-                    dump($plan_deal_x2);
-                    //还款
-                    $plan_deal_h = [
-                        'trade_amount' => $req['bill_amount'] / $req['plan_number'],
-                        'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
-                        'actual_amount' => $req['bill_amount'] / $req['plan_number'],
-                        'trade_fee' => 1.00,
-                        'trade_type' => 2,
-                        'card_id' => $req['card_id'],//卡
-                        'plan_details_id' => $plan_detailsid,
-                        'user_id' => $user['id']
-                    ];
-                    dump($plan_deal_h);
-                    Db::name('plan_deal')->save($plan_deal_h);
+                    dump($req['repayment_date'][$i]);
+                    $next=isset($req['repayment_date'][$i+1])?$req['repayment_date'][$i+1]:$req['repayment_date'][$i];
+                    dump($next);
+                    if($req['repayment_date'][$i]==$next){
+                      dump($plan_deal_h);
+                        $plan_deal_x1 = [
+                            'trade_amount' => $money,
+                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + ((1 + $i) * 900)),
+                            'actual_amount' => '0',
+                            'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
+                            'trade_type' => 1,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        Db::name('plan_deal')->save($plan_deal_x1);
+                        $plan_deal_x2 = [
+                            'trade_amount' => $money,
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
+                            'actual_amount' => '0',
+                            'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
+                            'trade_type' => 1,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        Db::name('plan_deal')->save($plan_deal_x2);
+
+                        //还款
+                        $plan_deal_h = [
+                            'trade_amount' => ($req['bill_amount'] / $req['plan_number'])+1,
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
+                            'actual_amount' => $req['bill_amount'] / $req['plan_number'],
+                            'trade_fee' => 1.00,
+                            'trade_type' => 2,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+
+                        Db::name('plan_deal')->save($plan_deal_h);
+                    }else{
+                        $plan_deal_x1 = [
+                            'trade_amount' => $money,
+                            'trade_time' =>  date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + ((1 + $i) * 900)),
+                            'actual_amount' => '0',
+                            'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
+                            'trade_type' => 1,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        dump($plan_deal_x1['trade_time']);
+                        Db::name('plan_deal')->save($plan_deal_x1);
+                        $plan_deal_x2 = [
+                            'trade_amount' => $money,
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
+                            'actual_amount' => '0',
+                            'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
+                            'trade_type' => 1,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        dump($plan_deal_x2['trade_time']);
+                        Db::name('plan_deal')->save($plan_deal_x2);
+                        //还款
+                        $plan_deal_h = [
+                            'trade_amount' => ($req['bill_amount'] / $req['plan_number'])+1,
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
+                            'actual_amount' => $req['bill_amount'] / $req['plan_number'],
+                            'trade_fee' => 1.00,
+                            'trade_type' => 2,
+                            'card_id' => $req['card_id'],//卡
+                            'plan_details_id' => $plan_detailsid,
+                            'user_id' => $user['id']
+                        ];
+                        dump($plan_deal_h['trade_time']);
+                        Db::name('plan_deal')->save($plan_deal_h);
+                        $plan_deal_h = [];
+                    }
+
                 }
             }
 
@@ -277,13 +302,12 @@ class Dh extends HomeController
     public function planshow()
     {
         $user = $this->user(request());
-        //获取当前日
-        $d = date('d', time());
         $req = request()->param();
         $order = OrderPlan::with(['details' => function (Query $query) {
             $query->with(['deal']);
-        }, 'card'])->where('user_id', $user['id'])->where('plan_status', 1)->select();
-        dump($order->toArray());
+        }, 'card'])->where('user_id', $user['id'])->where('plan_status', 1)->order('id','desc')->find();
+//        dump($order->toArray());
+        return Result::Success($order,'成功');
 
     }
 
@@ -293,23 +317,25 @@ class Dh extends HomeController
     {
         $plan = PlanDeal::with(['card', 'user', 'PlanDetails'])->where('trade_type', 1)->where('trade_status', 1)->select();
 
-//      dump($plan->toArray());
+
 
         foreach ($plan as $k => $v) {
             // 启动事务
             Db::startTrans();
             try {
                 //消费参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id']];
                 if (time() > strtotime($v['trade_time'])) {
-                    $a = $this->pay($arr, $v['user']);
+                    $a = $this->payOrderCreate($arr);
+                    dump($a);
                     $res = PlanDeal::find($v['id']);
                     //写入交易返回
-                    if ($a['code'] == 0) {
+                    if ($a[1]['resCode'] == '0000') {
                         $res->trade_status = 2;
                     }
-                    $res->message = json_encode($a, true);
+                    $res->message = json_encode($a[1], true);
                     $res->save();
+                    dump($res->toArray());
                 }
                 // 提交事务
                 Db::commit();
@@ -333,13 +359,15 @@ class Dh extends HomeController
             Db::startTrans();
             try {
                 //还款参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'bankCardNo' => $v['card']['card_no']];
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id']];
                 if (time() > strtotime($v['trade_time'])) {
-                $a = $this->repay($arr, $v['user']);
+                    dump($v->toarray());
+                    $a = $this->transferCreate($arr);
 //                    $a = ['code' => 0];
+                    dump($a);
                     $res = PlanDeal::find($v['id']);
                     //写入交易返回
-                    if ($a['code'] == 0) {
+                    if ($a[1]['resCode'] == '0000') {
                         $res->trade_status = 2;
                         //计划剩余还款金额
                         $plan = OrderPlan::find($v['PlanDetails']['plan_id']);
@@ -348,8 +376,9 @@ class Dh extends HomeController
                         //分润
                         $d = $this->profit($v['user']['id'], $arr, $v['id']);
                     }
-                    $res->message = json_encode($a, true);
+                    $res->message = json_encode($a[1], true);
                     $res->save();
+                    dump($res->toArray());
                 }
                 // 提交事务
                 Db::commit();
@@ -372,14 +401,22 @@ class Dh extends HomeController
         $req = request()->param();
         $order = OrderPlan::with(['details' => function (Query $query) {
             $query->with(['deal']);
-        }, 'card'])->where('user_id', $user['id'])->where('plan_status', 1)->select()->toArray();
+        }, 'card'])->where('user_id', $user['id'])->where('plan_status', 'in',['2,3,4'])->select()->toArray();
 
-        dump($order);
-        die;
+        return Result::Success($order,'成功');
+
+    }
+    //计算预留额度
+    public function Quota()
+    {
+        $req = request()->param();
+        $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1;
+        return Result::Success($money,'成功');
     }
 
 
-    public function profit($u, $arr, $plandeal_id)
+    //分润
+    protected function profit($u, $arr, $plandeal_id)
     {
         $u = User::find($u);
 
@@ -397,7 +434,7 @@ class Dh extends HomeController
                 'user_id' => $u['id'],//当前用户
                 'rate' => 12 + 1,//费率
                 'plan_deal_id' => $plandeal_id,//计划id
-                'card_no' => $arr['bankCardNo'],
+                'card_no' => $arr['id'],
                 'type' => 1,
                 'amount' => $arr['orderAmount'],
                 'profit' => $arr['orderAmount'] * (13 / 10000),
@@ -419,7 +456,7 @@ class Dh extends HomeController
                             'user_id' => $n['id'],
                             'rate' => (24 - 12) + 1,
                             'plan_deal_id' => $plandeal_id,//计划id
-                            'card_no' => $arr['bankCardNo'],
+                            'card_no' => $arr['id'],
                             'type' => 1,
                             'amount' => $arr['orderAmount'],
                             'profit' => $arr['orderAmount'] * (13 / 10000),
@@ -434,7 +471,7 @@ class Dh extends HomeController
                             'user_id' => $n['id'],
                             'rate' => (24 - 17) + 1,
                             'plan_deal_id' => $plandeal_id,//计划id
-                            'card_no' => $arr['bankCardNo'],
+                            'card_no' => $arr['id'],
                             'type' => 1,
                             'amount' => $arr['orderAmount'],
                             'profit' => $arr['orderAmount'] * (8 / 10000),
@@ -449,7 +486,7 @@ class Dh extends HomeController
                             'user_id' => $n['id'],
                             'rate' => 1,
                             'plan_deal_id' => $plandeal_id,//计划id
-                            'card_no' => $arr['bankCardNo'],
+                            'card_no' => $arr['id'],
                             'type' => 1,
                             'amount' => $arr['orderAmount'],
                             'profit' => $arr['orderAmount'] * (1 / 10000),
@@ -468,7 +505,7 @@ class Dh extends HomeController
                             'user_id' => $n['id'],
                             'rate' => (17 - 12) + 1,
                             'plan_deal_id' => $plandeal_id,//计划id
-                            'card_no' => $arr['bankCardNo'],
+                            'card_no' => $arr['id'],
                             'type' => 1,
                             'amount' => $arr['orderAmount'],
                             'profit' => $arr['orderAmount'] * (6 / 10000),
@@ -483,7 +520,7 @@ class Dh extends HomeController
                             'user_id' => $n['id'],
                             'rate' => 1,
                             'plan_deal_id' => $plandeal_id,//计划id
-                            'card_no' => $arr['bankCardNo'],
+                            'card_no' => $arr['id'],
                             'type' => 1,
                             'amount' => $arr['orderAmount'],
                             'profit' => $arr['orderAmount'] * (1 / 10000),
@@ -499,7 +536,7 @@ class Dh extends HomeController
                         'user_id' => $n['id'],
                         'rate' => 1,
                         'plan_deal_id' => $plandeal_id,//计划id
-                        'card_no' => $arr['bankCardNo'],
+                        'card_no' => $arr['id'],
                         'type' => 1,
                         'amount' => $arr['orderAmount'],
                         'profit' => $arr['orderAmount'] * (1 / 10000),
@@ -520,7 +557,7 @@ class Dh extends HomeController
                 'user_id' => $u['id'],
                 'rate' => 17 + 1,
                 'plan_deal_id' => $plandeal_id,//计划id
-                'card_no' => $arr['bankCardNo'],
+                'card_no' => $arr['id'],
                 'type' => 1,
                 'amount' => $arr['orderAmount'],
                 'profit' => $arr['orderAmount'] * (18 / 10000),
@@ -539,7 +576,7 @@ class Dh extends HomeController
                             'user_id' => $n['id'],
                             'rate' => (24 - 17) + 1,
                             'plan_deal_id' => $plandeal_id,//计划id
-                            'card_no' => $arr['bankCardNo'],
+                            'card_no' => $arr['id'],
                             'type' => 1,
                             'amount' => $arr['orderAmount'],
                             'profit' => $arr['orderAmount'] * (8 / 10000),
@@ -555,7 +592,7 @@ class Dh extends HomeController
                             'user_id' => $n['id'],
                             'rate' => 1,
                             'plan_deal_id' => $plandeal_id,//计划id
-                            'card_no' => $arr['bankCardNo'],
+                            'card_no' => $arr['id'],
                             'type' => 1,
                             'amount' => $arr['orderAmount'],
                             'profit' => $arr['orderAmount'] * (1 / 10000),
@@ -570,7 +607,7 @@ class Dh extends HomeController
                         'user_id' => $n['id'],
                         'rate' => 1,
                         'plan_deal_id' => $plandeal_id,//计划id
-                        'card_no' => $arr['bankCardNo'],
+                        'card_no' => $arr['id'],
                         'type' => 1,
                         'amount' => $arr['orderAmount'],
                         'profit' => $arr['orderAmount'] * (1 / 10000),
@@ -590,7 +627,7 @@ class Dh extends HomeController
                 'user_id' => $u['id'],
                 'rate' => 24 + 1,
                 'plan_deal_id' => $plandeal_id,//计划id
-                'card_no' => $arr['bankCardNo'],
+                'card_no' => $arr['id'],
                 'type' => 1,
                 'amount' => $arr['orderAmount'],
                 'profit' => $arr['orderAmount'] * (25 / 10000),
@@ -605,7 +642,7 @@ class Dh extends HomeController
                     'user_id' => $n['id'],
                     'rate' => 1,
                     'plan_deal_id' => $plandeal_id,//计划id
-                    'card_no' => $arr['bankCardNo'],
+                    'card_no' => $arr['id'],
                     'type' => 1,
                     'amount' => $arr['orderAmount'],
                     'profit' => $arr['orderAmount'] * (1 / 10000),

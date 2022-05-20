@@ -193,7 +193,6 @@ class Card extends HomeController
             'smsCode' => $req['smsCode']//短信验证码
         ];
         $res = $a->bindConfirm($data);
-        dump($res);
         return Result::Success($res[1]['content'],$res[1]['resMsg']);
     }
     //代付
@@ -219,6 +218,7 @@ class Card extends HomeController
             'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
         $res = $a->payOrderCreate($data);
+        dump($res);die;
         return Result::Success($res[1]['content'],$res[1]['resMsg']);
     }
 
@@ -264,5 +264,22 @@ class Card extends HomeController
 //        dump($res);die;
         return Result::Success($res[1]['content'],$res[1]['resMsg']);
     }
+
+    //查询下单
+    public function payOrderQuery()
+    {
+        $a = new Dhxe();
+        $user = $this->user(request());
+        $req = request()->param();
+//        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'orderNo' => $req['orderNo'],//订单号
+        ];
+        $res = $a->payOrderQuery($data);
+//        dump($res);die;
+        return Result::Success($res[1]['content'],$res[1]['resMsg']);
+    }
+
+
 
 }

@@ -77,4 +77,5 @@ class Index extends HomeController
        $city= Db::name('area_region')->select();
         return Result::Success($city,'成功');
     }
+
 }

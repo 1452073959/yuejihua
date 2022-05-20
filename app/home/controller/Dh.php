@@ -13,6 +13,7 @@ use app\admin\model\pay\Order;
 use app\admin\model\pay\Profit;
 use app\admin\model\plan\OrderPlan;
 use app\admin\model\plan\PlanDeal;
+use app\admin\model\plan\PlanDetails;
 use app\admin\model\UserCard;
 use app\home\help\Result;
 use app\home\help\Dhxe;
@@ -340,6 +341,34 @@ class Dh extends HomeController
         }, 'card'])->where('user_id', $user['id'])->where('plan_status', 1)->order('id', 'desc')->find();
 //        dump($order->toArray());
         return Result::Success($order, '成功');
+    }
+    //确认极化
+    public function confirmplan()
+    {
+        $req = request()->param();
+        // 启动事务
+        Db::startTrans();
+        try {
+        $order = OrderPlan::find($req['id']);
+        $order->plan_status=2;
+        $order->save();
+        $plandeta=  PlanDetails::where('plan_id',$order['id'])->select()->toArray();
+        $plandeta=array_column($plandeta,'id');
+        $plandeal=PlanDeal::where('plan_details_id','in',$plandeta)->select();
+        foreach ($plandeal as $k=>$v)
+        {
+            $v->trade_status=1;
+            $v->save();
+        }
+            // 提交事务
+            Db::commit();
+            return Result::Success($order, '成功');
+        } catch (\Exception $e) {
+            // 回滚事务
+            Db::rollback();
+            return $e->getMessage();
+        }
+
 
     }
 
@@ -447,7 +476,10 @@ class Dh extends HomeController
     {
         $user = $this->user(request());
         $req = request()->param();
-        $order = OrderPlan::with(['details', 'card'])->where('user_id', $user['id'])->where('plan_status', 'in', ['2,3,4'])->select()->toArray();
+        $order = OrderPlan::with(['details', 'card'])
+            ->where('user_id', $user['id'])
+            ->where('plan_status', 'in', '2,3,4')
+            ->select();
 
         return Result::Success($order, '成功');
 

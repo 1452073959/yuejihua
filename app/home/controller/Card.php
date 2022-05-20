@@ -35,7 +35,7 @@ class Card extends HomeController
         $card->expiration_date = $req['expiration_date'];
         $card->save();
 
-        return Result::Success($card,'成功');
+        return Result::Success($card, '成功');
     }
 
     public function card_list()
@@ -45,6 +45,10 @@ class Card extends HomeController
         $card = UserCard::with('user')->where('user_id', $user['id'])
             ->where('card_type', $req['card_type'])
             ->select();
+
+        foreach ($card as $k => $v) {
+            $card[$k]['channel'] = explode(',', $v['channel']);
+        }
         return Result::Success($card);
     }
 
@@ -172,8 +176,9 @@ class Card extends HomeController
         ];
 
         $res = $a->bindCard($data);
-       return Result::Success($res[1]['content'],$res[1]['resMsg']);
+        return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
+
     //短信通知
     public function bindConfirm2()
     {
@@ -193,8 +198,14 @@ class Card extends HomeController
             'smsCode' => $req['smsCode']//短信验证码
         ];
         $res = $a->bindConfirm($data);
-        return Result::Success($res[1]['content'],$res[1]['resMsg']);
+        if ($res[1]['resCode'] == '0000') {
+            $card->Signing_status = 2;
+            $card->channel = $card['channel'] . 'xt04';
+            $card->save();
+        }
+        return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
+
     //代付
     public function payOrderCreate()
     {
@@ -202,7 +213,7 @@ class Card extends HomeController
         $user = $this->user(request());
         $req = request()->param();
         $card = UserCard::where('id', $req['id'])->find();
-        $out_trade_no = 'xf'.date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $out_trade_no = 'xf' . date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
         $data = [
             'orderNo' => $out_trade_no,//订单号
             'idCard' => $card['idCardNo'],//身份证号
@@ -218,8 +229,9 @@ class Card extends HomeController
             'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
         $res = $a->payOrderCreate($data);
-        dump($res);die;
-        return Result::Success($res[1]['content'],$res[1]['resMsg']);
+        dump($res);
+        die;
+        return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
 
 
@@ -230,7 +242,7 @@ class Card extends HomeController
         $user = $this->user(request());
         $req = request()->param();
         $card = UserCard::where('id', $req['id'])->find();
-        $out_trade_no = 'xf'.date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $out_trade_no = 'xf' . date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
         $data = [
             'orderNo' => $out_trade_no,//订单号
             'idCard' => $card['idCardNo'],//身份证号
@@ -244,9 +256,8 @@ class Card extends HomeController
         ];
         $res = $a->transferCreate($data);
         dump($res);
-        return Result::Success($res[1]['content'],$res[1]['resMsg']);
+        return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
-
 
 
     //查询余额
@@ -262,7 +273,7 @@ class Card extends HomeController
         ];
         $res = $a->balanceQuery($data);
 //        dump($res);die;
-        return Result::Success($res[1]['content'],$res[1]['resMsg']);
+        return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
 
     //查询下单
@@ -277,9 +288,8 @@ class Card extends HomeController
         ];
         $res = $a->payOrderQuery($data);
 //        dump($res);die;
-        return Result::Success($res[1]['content'],$res[1]['resMsg']);
+        return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
-
 
 
 }

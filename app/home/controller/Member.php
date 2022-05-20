@@ -14,6 +14,7 @@ use app\admin\model\pay\Profit;
 use app\home\help\Result;
 use app\HomeController;
 use think\facade\Db;
+use think\Request;
 
 class Member extends HomeController
 {
@@ -122,6 +123,18 @@ class Member extends HomeController
             ->where('type', $req['type'])
             ->order('id', 'desc')->paginate(10);
         return Result::Success($res);
+
+    }
+
+    //注册
+    public function code(Request $request)
+    {
+
+        $user = $this->user($request);
+
+        $code = tudincode('https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']);
+//        $code = 'https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['pushing_code'];
+        return Result::Success(['base64img' => $code, 'url' => 'https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']]);
 
     }
 }

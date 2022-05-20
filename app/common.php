@@ -123,6 +123,25 @@ if (!function_exists('auth')) {
 
 }
 
+function tudincode($url = "http://www.baidu.com")
+{
+    require '../app/home/help/phpqrcode/phpqrcode.php';
+//        $qrcode = new \QRcode();
+    $value = $url;                    //二维码内容
+    $errorCorrectionLevel = 'H';    //容错级别
+    $matrixPointSize = 6;           //生成图片大小
+    ob_start();
+    \QRcode::png($value, false, $errorCorrectionLevel, $matrixPointSize, 2);
+    // $object->png($url, false, $errorCorrectionLevel, $matrixPointSize, 2); //这里就是把生成的图片流从缓冲区保存到内存对象上，使用base64_encode变成编码字符串，通过json返回给页面。
+    $imageString = base64_encode(ob_get_contents()); //关闭缓冲区
+    ob_end_clean(); //把生成的base64字符串返回给前端
+    $data = array('code' => 200, 'data' => $imageString);
+//        return '<img src="data:image/png;base64,'.$imageString.'" >';
+    return $imageString;
+
+}
+
+
 function http_post_data($url, $data_string)
 {
     $data_string = json_encode($data_string);

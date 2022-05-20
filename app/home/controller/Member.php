@@ -94,7 +94,17 @@ class Member extends HomeController
         }
     }
 
-
+    //修改卡信息
+    public function user_edit()
+    {
+        $req = request()->param();
+        $res = User::update($req);
+        if ($res) {
+            return Result::Success($res);
+        } else {
+            return Result::Error('失败', 1000);
+        }
+    }
     //收益中心
     public function dealhistory()
     {

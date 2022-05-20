@@ -9,6 +9,7 @@
 namespace app\home\controller;
 
 use app\admin\model\admin\User;
+use app\admin\model\UserCard;
 use app\home\help\Result;
 use app\HomeController;
 
@@ -53,14 +54,23 @@ class Team extends HomeController
         $a = GetTeamMember($user['id']);
         //本月
         $Month = User::whereMonth('create_time')->whereIn('id', $a)->count();
+        $Monthcard = UserCard::whereMonth('create_time')->whereIn('id', $a)->count();
         //上月
         $lastMonth = User::whereMonth('create_time', 'last month')->whereIn('id', $a)->count();
+        $lastcard = UserCard::whereMonth('create_time', 'last month')->whereIn('id', $a)->count();
         //本日
         $day = User::whereDay('create_time')->whereIn('id', $a)->count();
+        $daycard = UserCard::whereDay('create_time')->whereIn('id', $a)->count();
         //昨日
         $lastday = User::whereDay('create_time', 'yesterday')->whereIn('id', $a)->count();
+        $lastdaycard = User::whereDay('create_time', 'yesterday')->whereIn('id', $a)->count();
 
-        return Result::Success(['month' => $Month, 'lastmonth' => $lastMonth, 'day' => $day, 'lastday' => $lastday]);
+        return Result::Success(['month' => $Month, 'lastmonth' => $lastMonth, 'day' => $day, 'lastday' => $lastday,
+        'Monthcard'=>$Monthcard,
+        'lastcard'=>$lastcard,
+        'daycard'=>$daycard,
+        'lastdaycard'=>$lastdaycard,
+        ]);
     }
 
     //直推好友
@@ -107,6 +117,15 @@ class Team extends HomeController
             $member['data'][$k]['teamnum']=User::where('pid', $v['id'])->count();
         }
         return Result::Success($member);
+
+    }
+
+
+    //会员详情
+    public function member_show()
+    {
+        $req = request()->param();
+        //收款当月
 
     }
 

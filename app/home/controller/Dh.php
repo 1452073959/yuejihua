@@ -412,7 +412,12 @@ class Dh extends HomeController
                         //计划剩余还款金额
                         $plan = OrderPlan::find($v['PlanDetails']['plan_id']);
                         $plan->pending_amount = $plan['pending_amount'] - $v['actual_amount'];
+                        $plan->plan_status = 3;
                         $plan->save();
+                        if($plan['pending_amount']<=0){
+                            $plan->plan_status = 4;
+                            $plan->save();
+                        }
                         //分润
                         $d = $this->profit($v['user']['id'], $arr, $v['id']);
 
@@ -441,16 +446,26 @@ class Dh extends HomeController
     public function history()
     {
         $user = $this->user(request());
+        $req = request()->param();
+        $order = OrderPlan::with(['details', 'card'])->where('user_id', $user['id'])->where('plan_status', 'in', ['2,3,4'])->select()->toArray();
+
+        return Result::Success($order, '成功');
+
+    }
+    //还款记录详情
+    public function history_show()
+    {
+        $user = $this->user(request());
         //获取当前日
         $d = date('d', time());
         $req = request()->param();
         $order = OrderPlan::with(['details' => function (Query $query) {
             $query->with(['deal']);
-        }, 'card'])->where('user_id', $user['id'])->where('plan_status', 'in', ['2,3,4'])->select()->toArray();
+        }, 'card'])->where('user_id', $user['id'])->where('id', $req['id'])->find();
 
         return Result::Success($order, '成功');
-
     }
+
 
     //计算预留额度
     public function Quota()

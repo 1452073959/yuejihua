@@ -38,6 +38,7 @@ class Card extends HomeController
         return Result::Success($card, '成功');
     }
 
+//    卡列表
     public function card_list()
     {
         $user = $this->user(request());
@@ -47,10 +48,46 @@ class Card extends HomeController
             ->select();
 
         foreach ($card as $k => $v) {
-            $card[$k]['channel'] = explode(',', $v['channel']);
+            if ($v['channel']) {
+                $card[$k]['channel'] = explode(',', $v['channel']);
+            }
         }
-        return Result::Success($card);
+
+        if ($card) {
+            return Result::Success($card);
+        } else {
+            return Result::Error('失败', 1000);
+        }
     }
+        //单个卡信息
+    public function card_show()
+    {
+        $req = request()->param();
+        $card = UserCard::with('user')->where('id', $req['id'])->find();
+        if ($card['channel']) {
+            $card['channel'] = explode(',', $card['channel']);
+        }
+        if ($card) {
+            return Result::Success($card);
+        } else {
+            return Result::Error('失败', 1000);
+        }
+
+
+    }
+
+    //修改卡信息
+    public function card_edit()
+    {
+        $req = request()->param();
+        $res = UserCard::update($req);
+        if ($res) {
+            return Result::Success($res);
+        } else {
+            return Result::Error('失败', 1000);
+        }
+    }
+
 
     //进件商户
     public function Merchant_enters()

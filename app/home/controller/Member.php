@@ -67,7 +67,7 @@ class Member extends HomeController
                 }
                 Profit::create($profit);
                 $array = explode(',', $user['user_pid']);
-
+                $array=array_slice($array,0,9);
                 array_pop($array);
                 foreach ($array as $k => $v) {
                     $profit = [
@@ -147,4 +147,6 @@ class Member extends HomeController
         return Result::Success(['base64img' => $code, 'url' => 'https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']]);
 
     }
+
+
 }

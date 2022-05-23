@@ -3,7 +3,7 @@
 
 use app\common\service\AuthService;
 use think\facade\Cache;
-
+use \think\facade\Config;
 if (!function_exists('__url')) {
 
     /**
@@ -141,6 +141,88 @@ function tudincode($url = "http://www.baidu.com")
 
 }
 
+function httpget($url)
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.22 (KHTML, like Gecko)");
+    curl_setopt($ch, CURLOPT_ENCODING, "gzip");//加入gzip解析
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $output = curl_exec($ch);
+    curl_close($ch);
+
+    return $output;
+}
+
+
+function getCity($ip) {
+    // 获取当前位置所在城市
+    $content = file_get_contents("http://api.map.baidu.com/location/ip?ak=2TGbi6zzFm5rjYKqPPomh9GBwcgLW5sS&ip={$ip}&coor=bd09ll");
+    $json = json_decode($content);
+    $address = $json->{'content'}->{'address'};//按层级关系提取address数据
+    $data['address'] = $address;
+    $res = [];
+    $res['province'] = mb_substr($data['address'],0,3,'utf-8');
+    $res['city'] = mb_substr($data['address'],3,3,'utf-8');
+    return $res;
+}
+
+ function ip() {
+    //strcasecmp 比较两个字符，不区分大小写。返回0，>0，<0。
+    if(getenv('HTTP_CLIENT_IP') && strcasecmp(getenv('HTTP_CLIENT_IP'), 'unknown')) {
+        $ip = getenv('HTTP_CLIENT_IP');
+    } elseif(getenv('HTTP_X_FORWARDED_FOR') && strcasecmp(getenv('HTTP_X_FORWARDED_FOR'), 'unknown')) {
+        $ip = getenv('HTTP_X_FORWARDED_FOR');
+    } elseif(getenv('REMOTE_ADDR') && strcasecmp(getenv('REMOTE_ADDR'), 'unknown')) {
+        $ip = getenv('REMOTE_ADDR');
+    } elseif(isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] && strcasecmp($_SERVER['REMOTE_ADDR'], 'unknown')) {
+        $ip = $_SERVER['REMOTE_ADDR'];
+    }
+    $res =  preg_match ( '/[d.]{7,15}/', $ip, $matches ) ? $matches [0] : '';
+    echo $res;
+    //dump(phpinfo());//所有PHP配置信息
+}
+
+function transfer6($amount,$out_trade_no,$subject)
+{
+    require_once '../vendor/aop1/AopClient.php';
+    require_once '../vendor/aop1/AopCertClient.php';
+    require_once '../vendor/aop1/AopCertification.php';
+    require_once '../vendor/aop1/AlipayConfig.php';
+    require_once '../vendor/aop1/request/AlipayTradeAppPayRequest.php';
+    $privateKey = Config::get('alisms.privateKeyapp');
+    $alipayPublicKey = Config::get('alisms.alipayPublicKeyapp');
+    $alipayConfig = new AlipayConfig();
+    $alipayConfig->setServerUrl("https://openapi.alipaydev.com/gateway.do");
+    $alipayConfig->setAppId("2021003125693766");
+    $alipayConfig->setPrivateKey($privateKey);
+    $alipayConfig->setFormat("json");
+    $alipayConfig->setAlipayPublicKey($alipayPublicKey);
+    $alipayConfig->setCharset("UTF8");
+    $alipayConfig->setSignType("RSA2");
+    $alipayClient = new AopClient($alipayConfig);
+    $request = new AlipayTradeAppPayRequest();
+//    $request->setBizContent("{".
+//        "\"out_trade_no\":\"70501111S00114529\",".
+//        "\"total_amount\":\"0.01\",".
+//        "\"subject\":\"大乐透\"".
+//        "}");
+
+    $bizcontent = array(
+        'out_trade_no' => $out_trade_no,// 订单号
+        'total_amount' => $amount,   // 提现实际金额
+        'subject' => $subject,
+        'product_code' => 'QUICK_MSECURITY_PAY',
+    );
+    $request->setNotifyUrl("https://tdnetwork.cn/index/index/ordernotice");
+    $request->setBizContent(json_encode($bizcontent));
+    $responseResult = $alipayClient->sdkExecute($request);
+
+    return json_encode(['orderinfo'=>$responseResult],true);
+
+}
 
 function http_post_data($url, $data_string)
 {

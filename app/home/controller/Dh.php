@@ -41,7 +41,7 @@ class Dh extends HomeController
             'tel' => $card['tel'],//电话
             'orderAmount' => $req['orderAmount'],//代付金额
             'rate' => 0.8,//手续费
-            'city' => '武汉',//手续费
+            'city' => $req['city'],//手续费
             'cvn' => $card['cvn2'],//cvn
             'validDate' => $card['expiration_date'],//卡有效期
             'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
@@ -145,6 +145,7 @@ class Dh extends HomeController
             $orderplan = [
                 'user_id' => $user['id'],//用户
                 'card_id' => $req['card_id'],//卡
+                'city' => $req['city'],//城市
                 'bill_amount' => $req['bill_amount'],//账单金额
                 'card_balance' => $req['card_balance'],//卡余额
                 'pending_amount' => $req['bill_amount'],//代还金额
@@ -187,6 +188,7 @@ class Dh extends HomeController
                             'actual_amount' => '0',
                             'trade_fee' => $money - ($req['bill_amount'] / $req['plan_number']),
                             'trade_type' => 1,
+                            'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -211,6 +213,7 @@ class Dh extends HomeController
                             'actual_amount' => '0',
                             'trade_fee' => $money - ($req['bill_amount'] / $req['plan_number']),
                             'trade_type' => 1,
+                            'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -234,19 +237,15 @@ class Dh extends HomeController
                 } elseif ($req['repayment_mode'] == 2) {
                     $money = ceil($req['bill_amount'] / $req['plan_number'] / 2 / 0.992) + 0.5;
                     //消费
-                    dump($req['repayment_date'][$i]);
                     $next = isset($req['repayment_date'][$i + 1]) ? $req['repayment_date'][$i + 1] : $req['repayment_date'][$i];
-                    dump($req['repayment_date'][$i] == $next);
                     if ($req['repayment_date'][$i] == $next) {
-                        dump($plan_deal_h);
-                        dump(isset($plan_deal_h['trade_time']));
-                        echo 1;
                         $plan_deal_x1 = [
                             'trade_amount' => $money,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
                             'actual_amount' => '0',
                             'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
                             'trade_type' => 1,
+                            'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -258,6 +257,7 @@ class Dh extends HomeController
                             'actual_amount' => '0',
                             'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
                             'trade_type' => 1,
+                            'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -284,6 +284,7 @@ class Dh extends HomeController
                             'actual_amount' => '0',
                             'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
                             'trade_type' => 1,
+                            'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -293,6 +294,7 @@ class Dh extends HomeController
                             'trade_amount' => $money,
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
                             'actual_amount' => '0',
+                            'city' => $req['city'],
                             'trade_fee' => $money - $req['bill_amount'] / $req['plan_number'] / 2,
                             'trade_type' => 1,
                             'card_id' => $req['card_id'],//卡
@@ -383,7 +385,7 @@ class Dh extends HomeController
             Db::startTrans();
             try {
                 //消费参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id']];
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'],'city'=>$v['city']];
                 if (time() > strtotime($v['trade_time'])) {
                     $a = $this->payOrderCreate($arr);
                     dump($a);
@@ -515,7 +517,7 @@ class Dh extends HomeController
         $u = User::find($u);
 
         $a = explode(',', $u['user_pid']);
-
+        $a=array_slice($a,0,6);
         $apid = array_reverse($a);
         $statusv3 = true;
         $statusv2 = true;

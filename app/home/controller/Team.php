@@ -123,8 +123,8 @@ class Team extends HomeController
     //会员详情
     public function member_show()
     {
-        $user = $this->user(request());
         $req = request()->param();
+        $user = User::find($req['id']);
         //还款当月/上月
         $hk1 = PlanDeal::where('trade_type', 2)
             ->where('trade_status', 3)
@@ -183,6 +183,7 @@ class Team extends HomeController
             'team_zt'=>['month'=>$tzt2,'last_month'=>$tzt3,'yesterday'=>$tzt1,'total'=>$tzt4],
             'team_ztv1'=>['month'=>$tztv2,'last_month'=>$tztv3,'yesterday'=>$tztv1,'total'=>$tztv4],
             'team_jy'=>['month'=>$tzthk2,'last_month'=>$tzthk3,'yesterday'=>$tzthk1,'total'=>$tzthk4],
+            'user'=>$user
 
         ],'成功');
     }

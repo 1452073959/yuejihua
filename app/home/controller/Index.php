@@ -3,6 +3,7 @@ declare (strict_types=1);
 
 namespace app\home\controller;
 
+use app\admin\model\pay\Profit;
 use app\home\help\Pdd;
 use app\home\help\Result;
 use app\HomeController;
@@ -74,6 +75,54 @@ class Index extends HomeController
         dump($a);
         die;
     }
+
+    //收益中心
+    public function dealhistory()
+    {
+        $user = $this->user(request());
+        $req = request()->param();
+        //当天开始时间
+        $start_time = strtotime(date("Y-m-d", time()));
+        //当天结束之间
+        $end_time = $start_time + 60 * 60 * 24;
+//        $firstTime = \think\facade\Request::post('firstTime', $start_time);
+//        $lastTime = \think\facade\Request::post('lastTime', $end_time);
+        if ($req['firstTime'] == '') {
+            $firstTime = $start_time;
+        } else {
+            $firstTime = $req['firstTime'];
+        }
+        if ($req['lastTime'] == '') {
+            $lastTime = $end_time;
+        } else {
+            $lastTime = $req['lastTime'];
+        }
+
+        $res = Profit::with('card')
+            ->where('user_id', $user['id'])
+            ->whereBetweenTime('createtime', $firstTime, $lastTime)
+            ->where('type', $req['type'])
+            ->order('id', 'desc')->paginate(10)->toArray();
+
+        $res1 = Profit::with('card')
+            ->where('user_id', $user['id'])
+            ->whereBetweenTime('createtime', $firstTime, $lastTime)
+            ->where('type',1)
+            ->order('id', 'desc')->count();
+        $res2 = Profit::with('card')
+            ->where('user_id', $user['id'])
+            ->whereBetweenTime('createtime', $firstTime, $lastTime)
+            ->where('type',2)
+            ->order('id', 'desc')->count();
+        $sum=0;
+        foreach ($res['data'] as $k=>$v)
+        {
+            $sum+=$v['profit'];
+        }
+        return Result::Success(['data'=>$res,'count1'=>$res1,'count2'=>$res2,'sum'=>$sum]);
+
+    }
+
 
     public function city()
     {

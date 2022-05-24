@@ -260,7 +260,7 @@ class Card extends HomeController
             'tel' => $card['tel'],//电话
             'orderAmount' => $req['orderAmount'],//代付金额
             'rate' => 0.6,//手续费
-            'city' => '武汉',//手续费
+            'city' => '上海',//手续费
             'cvn' => $card['cvn2'],//cvn
             'validDate' => $card['expiration_date'],//卡有效期
             'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',

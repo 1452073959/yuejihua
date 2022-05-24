@@ -178,7 +178,6 @@ class Dh extends HomeController
                     //消费
                     $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1;
                     //日期
-                    dump($req['repayment_date'][$i]);
                     //最后一个日期
                     $next = isset($req['repayment_date'][$i + 1]) ? $req['repayment_date'][$i + 1] : $req['repayment_date'][$i];
                     if ($req['repayment_date'][$i] == $next) {
@@ -341,7 +340,17 @@ class Dh extends HomeController
         $order = OrderPlan::with(['details' => function (Query $query) {
             $query->with(['deal']);
         }, 'card'])->where('user_id', $user['id'])->where('plan_status', 1)->order('id', 'desc')->find();
-//        dump($order->toArray());
+
+        foreach ($order['details'] as  $k=>$v)
+        {
+                foreach ($v['deal'] as $k1=>$v1)
+                {
+                    if($v1['trade_type']==1){
+                        $order['total']+= $v1['trade_amount'];
+                    }
+                }
+        }
+
         return Result::Success($order, '成功');
     }
     //确认极化
@@ -352,7 +361,7 @@ class Dh extends HomeController
         Db::startTrans();
         try {
         $order = OrderPlan::find($req['id']);
-        $order->plan_status=2;
+        $order->plan_status=3;
         $order->save();
         $plandeta=  PlanDetails::where('plan_id',$order['id'])->select()->toArray();
         $plandeta=array_column($plandeta,'id');
@@ -371,7 +380,33 @@ class Dh extends HomeController
             return $e->getMessage();
         }
 
-
+    }
+    //取消极化
+    public function Cancelplan()
+    {
+        $req = request()->param();
+        // 启动事务
+        Db::startTrans();
+        try {
+            $order = OrderPlan::find($req['id']);
+            $order->plan_status=2;
+            $order->save();
+            $plandeta=  PlanDetails::where('plan_id',$order['id'])->select()->toArray();
+            $plandeta=array_column($plandeta,'id');
+            $plandeal=PlanDeal::where('plan_details_id','in',$plandeta)->select();
+            foreach ($plandeal as $k=>$v)
+            {
+                $v->trade_status=4;
+                $v->save();
+            }
+            // 提交事务
+            Db::commit();
+            return Result::Success($order, '成功');
+        } catch (\Exception $e) {
+            // 回滚事务
+            Db::rollback();
+            return $e->getMessage();
+        }
     }
 
 
@@ -478,8 +513,15 @@ class Dh extends HomeController
     {
         $user = $this->user(request());
         $req = request()->param();
+        $where=[];
+        if (isset($req['id'])) {
+            $where = [
+                ['card_id', '=', $req['id']]
+            ];
+        };
         $order = OrderPlan::with(['details', 'card'])
             ->where('user_id', $user['id'])
+            ->where($where)
             ->where('plan_status', 'in', '2,3,4')
             ->select();
 
@@ -509,7 +551,7 @@ class Dh extends HomeController
         return Result::Success($money, '成功');
     }
 
-    //分润
+    //
 
     //分润
     protected function profit($u, $arr, $plandeal_id)

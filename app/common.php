@@ -216,7 +216,7 @@ function transfer6($amount,$out_trade_no,$subject)
         'subject' => $subject,
         'product_code' => 'QUICK_MSECURITY_PAY',
     );
-    $request->setNotifyUrl("https://tdnetwork.cn/index/index/ordernotice");
+    $request->setNotifyUrl("http://47.114.116.249:1314/home/index/notice");
     $request->setBizContent(json_encode($bizcontent));
     $responseResult = $alipayClient->sdkExecute($request);
 

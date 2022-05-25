@@ -25,6 +25,7 @@ class Card extends HomeController
         $card->card_type = $req['card_type'];
         $card->card_no = $req['card_no'];
         $card->bank_logo = $req['bank_logo'];
+        $card->bankCode = $req['bankCode'];
         $card->bank = $req['bank'];
         $card->tel = $req['tel'];
         $card->bill_date = $req['bill_date'];

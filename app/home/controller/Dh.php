@@ -341,18 +341,17 @@ class Dh extends HomeController
             $query->with(['deal']);
         }, 'card'])->where('user_id', $user['id'])->where('plan_status', 1)->order('id', 'desc')->find();
 
-        foreach ($order['details'] as  $k=>$v)
-        {
-                foreach ($v['deal'] as $k1=>$v1)
-                {
-                    if($v1['trade_type']==1){
-                        $order['total']+= $v1['trade_amount'];
-                    }
+        foreach ($order['details'] as $k => $v) {
+            foreach ($v['deal'] as $k1 => $v1) {
+                if ($v1['trade_type'] == 1) {
+                    $order['total'] += $v1['trade_amount'];
                 }
+            }
         }
 
         return Result::Success($order, '成功');
     }
+
     //确认极化
     public function confirmplan()
     {
@@ -360,17 +359,16 @@ class Dh extends HomeController
         // 启动事务
         Db::startTrans();
         try {
-        $order = OrderPlan::find($req['id']);
-        $order->plan_status=3;
-        $order->save();
-        $plandeta=  PlanDetails::where('plan_id',$order['id'])->select()->toArray();
-        $plandeta=array_column($plandeta,'id');
-        $plandeal=PlanDeal::where('plan_details_id','in',$plandeta)->select();
-        foreach ($plandeal as $k=>$v)
-        {
-            $v->trade_status=1;
-            $v->save();
-        }
+            $order = OrderPlan::find($req['id']);
+            $order->plan_status = 3;
+            $order->save();
+            $plandeta = PlanDetails::where('plan_id', $order['id'])->select()->toArray();
+            $plandeta = array_column($plandeta, 'id');
+            $plandeal = PlanDeal::where('plan_details_id', 'in', $plandeta)->select();
+            foreach ($plandeal as $k => $v) {
+                $v->trade_status = 1;
+                $v->save();
+            }
             // 提交事务
             Db::commit();
             return Result::Success($order, '成功');
@@ -381,6 +379,7 @@ class Dh extends HomeController
         }
 
     }
+
     //取消极化
     public function Cancelplan()
     {
@@ -389,14 +388,13 @@ class Dh extends HomeController
         Db::startTrans();
         try {
             $order = OrderPlan::find($req['id']);
-            $order->plan_status=2;
+            $order->plan_status = 2;
             $order->save();
-            $plandeta=  PlanDetails::where('plan_id',$order['id'])->select()->toArray();
-            $plandeta=array_column($plandeta,'id');
-            $plandeal=PlanDeal::where('plan_details_id','in',$plandeta)->select();
-            foreach ($plandeal as $k=>$v)
-            {
-                $v->trade_status=4;
+            $plandeta = PlanDetails::where('plan_id', $order['id'])->select()->toArray();
+            $plandeta = array_column($plandeta, 'id');
+            $plandeal = PlanDeal::where('plan_details_id', 'in', $plandeta)->select();
+            foreach ($plandeal as $k => $v) {
+                $v->trade_status = 4;
                 $v->save();
             }
             // 提交事务
@@ -420,7 +418,7 @@ class Dh extends HomeController
             Db::startTrans();
             try {
                 //消费参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'],'city'=>$v['city']];
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'city' => $v['city']];
                 if (time() > strtotime($v['trade_time'])) {
                     $a = $this->payOrderCreate($arr);
                     dump($a);
@@ -480,7 +478,7 @@ class Dh extends HomeController
                         $plan->pending_amount = $plan['pending_amount'] - $v['actual_amount'];
                         $plan->plan_status = 3;
                         $plan->save();
-                        if($plan['pending_amount']<=0){
+                        if ($plan['pending_amount'] <= 0) {
                             $plan->plan_status = 4;
                             $plan->save();
                         }
@@ -513,7 +511,7 @@ class Dh extends HomeController
     {
         $user = $this->user(request());
         $req = request()->param();
-        $where=[];
+        $where = [];
         if (isset($req['id'])) {
             $where = [
                 ['card_id', '=', $req['id']]
@@ -528,6 +526,7 @@ class Dh extends HomeController
         return Result::Success($order, '成功');
 
     }
+
     //还款记录详情
     public function history_show()
     {
@@ -559,7 +558,7 @@ class Dh extends HomeController
         $u = User::find($u);
 
         $a = explode(',', $u['user_pid']);
-        $a=array_slice($a,0,6);
+        $a = array_slice($a, 0, 6);
         $apid = array_reverse($a);
         $statusv3 = true;
         $statusv2 = true;
@@ -581,6 +580,9 @@ class Dh extends HomeController
                 'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
             ];
             Profit::create($profit);
+            $userprofit_balance = User::where('id', $profit['user_id'])->find();
+            $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+            $userprofit_balance->save();
             foreach ($apid as $k => $v) {
 
                 $n = User::find($v);
@@ -604,6 +606,9 @@ class Dh extends HomeController
                             'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
                         ];
                         Profit::create($profit);
+                        $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                        $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                        $userprofit_balance->save();
                         //出现v3后更改状态
                         $statusv3 = false;
                     } elseif ($statusv2 == false && $statusv3) {
@@ -622,6 +627,9 @@ class Dh extends HomeController
                         dump($profit);
                         $statusv3 = false;
                         Profit::create($profit);
+                        $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                        $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                        $userprofit_balance->save();
                     } else {
                         $profit = [
                             'user_id' => $n['id'],
@@ -636,6 +644,9 @@ class Dh extends HomeController
                             'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
                         ];
                         Profit::create($profit);
+                        $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                        $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                        $userprofit_balance->save();
                     }
                 }
                 //v2
@@ -656,6 +667,9 @@ class Dh extends HomeController
                             'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
                         ];
                         Profit::create($profit);
+                        $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                        $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                        $userprofit_balance->save();
                         //  出现v2后更改v2状态
                         $statusv2 = false;
                     } else {
@@ -672,6 +686,9 @@ class Dh extends HomeController
                             'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
                         ];
                         Profit::create($profit);
+                        $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                        $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                        $userprofit_balance->save();
                     }
                 }
                 //v1全部是1
@@ -689,6 +706,9 @@ class Dh extends HomeController
                         'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
                     ];
                     Profit::create($profit);
+                    $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                    $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                    $userprofit_balance->save();
                 }
             }
 
@@ -711,6 +731,9 @@ class Dh extends HomeController
                 'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
             ];
             Profit::create($profit);
+            $userprofit_balance = User::where('id', $profit['user_id'])->find();
+            $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+            $userprofit_balance->save();
 
             foreach ($apid as $k => $v) {
                 $n = User::find($v);
@@ -733,6 +756,9 @@ class Dh extends HomeController
                         ];
 
                         Profit::create($profit);
+                        $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                        $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                        $userprofit_balance->save();
                         $statusv3 = false;
                     } else {
                         $profit = [
@@ -748,6 +774,9 @@ class Dh extends HomeController
                             'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
                         ];
                         Profit::create($profit);
+                        $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                        $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                        $userprofit_balance->save();
                     }
                 }
                 if ($n['vip_label'] == 3 || $n['vip_label'] == 2) {
@@ -765,6 +794,9 @@ class Dh extends HomeController
                     ];
 
                     Profit::create($profit);
+                    $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                    $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                    $userprofit_balance->save();
                 }
             }
         }
@@ -785,6 +817,9 @@ class Dh extends HomeController
                 'describe' => $u['name'] . '还款' . $arr['orderAmount'] . '元',
             ];
             Profit::create($profit);
+            $userprofit_balance = User::where('id', $profit['user_id'])->find();
+            $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+            $userprofit_balance->save();
 
             foreach ($apid as $k => $v) {
                 $n = User::find($v);
@@ -803,6 +838,9 @@ class Dh extends HomeController
                 ];
                 dump($profit);
                 Profit::create($profit);
+                $userprofit_balance = User::where('id', $profit['user_id'])->find();
+                $userprofit_balance->profit_balance = $userprofit_balance['profit_balance'] + $profit['profit'];
+                $userprofit_balance->save();
             }
 
         }
@@ -810,5 +848,10 @@ class Dh extends HomeController
         return 'ok';
     }
 
+    //定时删除订单
+    public function delplan()
+    {
+        OrderPlan::where('plan_status',1)->delete();
+    }
 
 }

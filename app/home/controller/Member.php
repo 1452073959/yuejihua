@@ -31,8 +31,8 @@ class Member extends HomeController
         Db::startTrans();
         try {
             $code = Memberorder::where('order_status', 2)->where('merber_code', $req['merber_code'])->find();
-            $code->order_status=4;
-            $code->phone_merber=$req['phone'];
+            $code->order_status = 4;
+            $code->phone_merber = $req['phone'];
             $code->save();
             if (!$code) {
                 return Result::Error('1000', '请确认权益码是否有效');
@@ -80,6 +80,9 @@ class Member extends HomeController
                     ];
                 }
                 Profit::create($profit);
+                $userrecruit_balance = User::where('id', $profit['id'])->find();
+                $userrecruit_balance->recruit_balance = $userrecruit_balance['recruit_balance'] + $profit['profit'];
+                $userrecruit_balance->save();
                 $array = explode(',', $user['user_pid']);
                 $array = array_slice($array, 0, 9);
                 array_pop($array);
@@ -93,6 +96,9 @@ class Member extends HomeController
                         'describe' => '招商分润' . $user['phone'],
                     ];
                     Profit::create($profit);
+                    $userrecruit_balance = User::where('id', $profit['id'])->find();
+                    $userrecruit_balance->recruit_balance = $userrecruit_balance['recruit_balance'] + $profit['profit'];
+                    $userrecruit_balance->save();
                 }
 
 
@@ -104,7 +110,7 @@ class Member extends HomeController
         } catch (\Exception $e) {
             // 回滚事务
             Db::rollback();
-            return Result::Error('1000',  $e->getMessage());
+            return Result::Error('1000', $e->getMessage());
         }
     }
 
@@ -136,13 +142,14 @@ class Member extends HomeController
         $mermber->save();
         return $payorder;
     }
+
     //权益码列表
     public function member_code_list(Request $request)
     {
         $user = $this->user($request);
         $req = $request->param();
-        $member_code_list= Memberorder::where('user_id',$user['id'])->where('order_status','in',$req['status'])->field('order_status,id,merber_code,order_pay,phone_merber')->paginate(10);
-        return Result::Success($member_code_list,'成功');
+        $member_code_list = Memberorder::where('user_id', $user['id'])->where('order_status', 'in', $req['status'])->field('order_status,id,merber_code,order_pay,phone_merber')->paginate(10);
+        return Result::Success($member_code_list, '成功');
     }
 
 

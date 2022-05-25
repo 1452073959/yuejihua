@@ -3,6 +3,7 @@ declare (strict_types=1);
 
 namespace app\home\controller;
 
+use app\admin\model\admin\User;
 use app\admin\model\member\Memberorder;
 use app\admin\model\pay\Profit;
 use app\home\help\Pdd;
@@ -96,6 +97,17 @@ class Index extends HomeController
             $order->order_status = 2;//修改订单为成功
             $order->paid_at = $data['gmt_payment'];//
             $order->save();
+
+            $count = Memberorder::where('user_id', $order['user_id'])->where('order_status', 'in', [2,4])->field('order_status,id,merber_code,order_pay,phone_merber')->count();
+            if($count>=3){
+              $user=  User::find($order['user_id']);
+              $user->vip_label = 3;
+              $user->save();
+            }elseif ($count>=20){
+                $user=  User::find($order['user_id']);
+                $user->vip_label = 4;
+                $user->save();
+            }
             return 'success';
         } else {
             Log::write('支付宝回调异常');

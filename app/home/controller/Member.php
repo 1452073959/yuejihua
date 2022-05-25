@@ -48,6 +48,7 @@ class Member extends HomeController
             $user->vip_label = 2;
             $user->save();
 
+
             if ($user) {
                 $pid = User::find($user['pid']);
                 //直属上级分润
@@ -79,8 +80,10 @@ class Member extends HomeController
                         'describe' => '招商分润' . $user['phone'],
                     ];
                 }
+
                 Profit::create($profit);
-                $userrecruit_balance = User::where('id', $profit['id'])->find();
+
+                $userrecruit_balance = User::where('id', $profit['user_id'])->find();
                 $userrecruit_balance->recruit_balance = $userrecruit_balance['recruit_balance'] + $profit['profit'];
                 $userrecruit_balance->save();
                 $array = explode(',', $user['user_pid']);
@@ -96,7 +99,8 @@ class Member extends HomeController
                         'describe' => '招商分润' . $user['phone'],
                     ];
                     Profit::create($profit);
-                    $userrecruit_balance = User::where('id', $profit['id'])->find();
+
+                    $userrecruit_balance = User::where('id', $profit['user_id'])->find();
                     $userrecruit_balance->recruit_balance = $userrecruit_balance['recruit_balance'] + $profit['profit'];
                     $userrecruit_balance->save();
                 }

@@ -141,7 +141,7 @@ class Member extends HomeController
     {
         $user = $this->user($request);
         $req = $request->param();
-        $member_code_list= Memberorder::where('user_id',$user['id'])->where('order_status','in',$req['status'])->field('order_status,id,merber_code,phone_merber')->paginate(10);
+        $member_code_list= Memberorder::where('user_id',$user['id'])->where('order_status','in',$req['status'])->field('order_status,id,merber_code,order_pay,phone_merber')->paginate(10);
         return Result::Success($member_code_list,'成功');
     }
 

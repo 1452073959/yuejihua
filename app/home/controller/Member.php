@@ -131,8 +131,9 @@ class Member extends HomeController
         $mermber->no = $out_trade_no;
         $mermber->user_id = $user['id'];
         $mermber->merber_code = $code;
+        $payorder = transfer6(0.1, $out_trade_no, $user['name'] . '的会员订单');
+        $mermber->order_pay = $payorder;
         $mermber->save();
-        $payorder = transfer6(10, $out_trade_no, $user['name'] . '的会员订单');
         return $payorder;
     }
     //权益码列表
@@ -140,7 +141,7 @@ class Member extends HomeController
     {
         $user = $this->user($request);
         $req = $request->param();
-        $member_code_list= Memberorder::where('user_id',$user['id'])->where('order_status',$req['status'])->field('order_status,id,merber_code')->paginate(10);
+        $member_code_list= Memberorder::where('user_id',$user['id'])->where('order_status','in',$req['status'])->field('order_status,id,merber_code,phone_merber')->paginate(10);
         return Result::Success($member_code_list,'成功');
     }
 

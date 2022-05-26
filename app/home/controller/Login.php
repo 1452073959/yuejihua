@@ -185,5 +185,12 @@ class Login extends HomeController
         }
     }
 
+    //版本更新
+    public function version(Request $request)
+    {
+        return Result::Success( ['link' => 'https://translate.google.cn/', 'version_number' => 'xxx', 'version' => '1.4.2'], '成功');
+
+    }
+
 
 }

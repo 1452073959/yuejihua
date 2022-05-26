@@ -151,4 +151,39 @@ class Login extends HomeController
         }
     }
 
+    /**
+     * @NodeAnotation(title="文件异步上传")
+     */
+    function file()
+    {
+        $file = request()->file('file');
+        try {
+            validate(['file' => [
+                // 限制文件大小(单位b)，这里限制为4M
+                'fileSize' => 2 * 1024 * 1024,
+                // 限制文件后缀，多个后缀以英文逗号分割
+                'fileExt' => 'png,jpg,jpeg'
+                // 更多规则请看“上传验证”的规则，文档地址https://www.kancloud.cn/manual/thinkphp6_0/1037629#_444
+            ]])->check(['file' => $file]);
+//            //文文件类型
+//            $mime_type = $file->getOriginalExtension();
+
+            if (null === $file) {
+                // 异常代码使用UPLOAD_ERR_NO_FILE常量，方便需要进一步处理异常时使用
+                return Result::Error('1000', '未选择文件');
+            }
+            if (!is_null($file)) {
+                //文件名
+                $fileName = $file->getOriginalName();
+                // 上传到本地服务器
+                $info = \think\facade\Filesystem::disk('public')->putFileAs('/upload/avatar', $file, $fileName);
+                return Result::Success(['path' => 'http://' . $_SERVER['HTTP_HOST'] . '/' . $info], '上传成功');
+            }
+        } catch (\Exception $e) {
+            // 如果上传时有异常，会执行这里的代码，可以在这里处理异常
+            return Result::Error('1000', $e->getMessage());
+        }
+    }
+
+
 }

@@ -394,8 +394,10 @@ class Dh extends HomeController
             $plandeta = array_column($plandeta, 'id');
             $plandeal = PlanDeal::where('plan_details_id', 'in', $plandeta)->select();
             foreach ($plandeal as $k => $v) {
-                $v->trade_status = 4;
-                $v->save();
+                if($v['trade_status']!=2||$v['trade_status']!=3){
+                    $v->trade_status = 4;
+                    $v->save();
+                }
             }
             // 提交事务
             Db::commit();

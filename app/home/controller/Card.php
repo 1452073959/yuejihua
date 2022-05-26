@@ -214,7 +214,12 @@ class Card extends HomeController
         ];
 
         $res = $a->bindCard($data);
-        return Result::Success($res[1]['content'], $res[1]['resMsg']);
+        if ($res[1]['resCode'] == '0000') {
+            return Result::Success($res[1]['content'], $res[1]['resMsg']);
+        }else{
+            return Result::Error(1000, $res[1]['resMsg']);
+        }
+
     }
 
     //短信通知

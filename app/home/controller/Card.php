@@ -24,7 +24,7 @@ class Card extends HomeController
         $card->user_id = $user['id'];
         $card->card_type = $req['card_type'];
         $card->card_no = $req['card_no'];
-        $card->bank_logo = $req['bank_logo'];
+        $card->bank_logo = htmlspecialchars_decode($req['bank_logo']) ;
         $card->bankCode = $req['bankCode'];
         $card->bank = $req['bank'];
         $card->tel = $req['tel'];

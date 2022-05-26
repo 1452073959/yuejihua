@@ -172,6 +172,7 @@ class Member extends HomeController
         return Result::Success(['base64img' => $code, 'url' => 'https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']]);
 
     }
+
     //招商收益
     public function dealhistory()
     {
@@ -213,13 +214,70 @@ class Member extends HomeController
         //今日收益
         $res3 = Profit::with('card')
             ->where('user_id', $user['id'])
-             ->whereDay('createtime')
+            ->whereDay('createtime')
             ->sum('profit');
         $sum = 0;
         foreach ($res['data'] as $k => $v) {
             $sum += $v['profit'];
         }
-        return Result::Success(['data' => $res, 'count1' => $res1, 'count2' => $res2, 'sum' => $sum,'today'=>$res3]);
+        return Result::Success(['data' => $res, 'count1' => $res1, 'count2' => $res2, 'sum' => $sum, 'today' => $res3]);
+
+    }
+
+
+    //提现
+    public function tixian(Request $request)
+    {
+        $req = $request->param();
+        $user = $this->user($request);
+        dump($user->toArray());
+        $validate = new \think\Validate();
+        $validate->rule([
+            'name|姓名' => 'require',
+            'account|账号' => 'require',
+            'money|金额' => 'require',
+            'type|提现类型' => 'require',
+        ]);
+        if (!$validate->check($req)) {
+            return Result::Error('1000', $validate->getError());
+        }
+        Db::startTrans();
+        try {
+            //获取代理的一级代理
+            $res = User::where('id', $user['id'])->find();
+            if ($req['type'] == 1) {
+                $res->profit_balance = $res['profit_balance'] - round($req['money'], 2);
+                $res->save();
+                if ($res['profit_balance'] < 0) {
+                    // 回滚事务
+                    Db::rollback();
+                    return Result::Error('1000', '分润余额不足');
+                }
+            }
+            if ($req['type'] == 2) {
+                $res->recruit_balance = $res['recruit_balance'] - round($req['money'], 2);
+                $res->save();
+                if ($res['recruit_balance'] < 0) {
+                    // 回滚事务
+                    Db::rollback();
+                    return Result::Error('1000', '招商余额不足');
+                }
+            }
+            $resultCode = transfer4($req['account'], $req['name'], round($req['money'], 2));
+            if (!empty($resultCode) && $resultCode->code == 10000) {
+                // 提交事务
+                Db::commit();
+                return Result::Success($resultCode->msg, '打款成功');
+            } else {
+                // 回滚事务
+                Db::rollback();
+                return Result::Error('1000', $resultCode->sub_msg);
+            }
+        } catch (\Exception $e) {
+            // 回滚事务
+            Db::rollback();
+            return Result::Error('1000', $e->getMessage());
+        }
 
     }
 

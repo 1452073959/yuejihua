@@ -185,6 +185,49 @@ function getCity($ip) {
     //dump(phpinfo());//所有PHP配置信息
 }
 
+
+
+
+
+
+//转账到户
+function transfer4($phone,$name,$amount)
+{
+
+    $out_trade_no = date('Ymd') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);//订单号，自己生成
+    //1、execute 使用
+    require '../vendor/aop1/AopClient.php';
+    require '../vendor/aop1/request/AlipayFundTransToaccountTransferRequest.php';
+    $alipayPublicKey = Config::get('alisms.alipayPublicKeyapp');
+    $privateKey = Config::get('alisms.privateKeyapp');
+    $aop = new \AopClient ();
+    $aop->gatewayUrl = 'https://openapi.alipay.com/gateway.do';//支付宝网关
+    $aop->appId = '2021003125693766';
+    $aop->rsaPrivateKey = $privateKey;
+    $aop->apiVersion = '1.0';
+    $aop->signType = 'RSA2';
+    $aop->postCharset = 'utf-8';
+    $aop->format = 'json';
+    $request = new \AlipayFundTransToaccountTransferRequest ();
+    $BizContent = array(
+        'out_biz_no' => $out_trade_no, //商户转账唯一订单号
+        'payee_type' => 'ALIPAY_LOGONID', //收款方账户类型
+        'payee_account' =>$phone, //收款方账户
+        'payee_real_name' =>$name, //收款方姓名
+        'amount' => $amount, //转账金额
+        'payer_show_name' => '源信生活', //付款方显示姓名
+
+    );
+    $request->setBizContent(json_encode($BizContent));
+    $result = $aop->execute($request);
+    $responseNode = str_replace(".", "_", $request->getApiMethodName()) . "_response";
+    $resultCode = $result->$responseNode;
+
+    return $resultCode;
+
+}
+
+
 function transfer6($amount,$out_trade_no,$subject)
 {
     require_once '../vendor/aop1/AopClient.php';
@@ -216,6 +259,9 @@ function transfer6($amount,$out_trade_no,$subject)
         'subject' => $subject,
         'product_code' => 'QUICK_MSECURITY_PAY',
     );
+
+
+
     $request->setNotifyUrl("http://47.114.116.249:1314/home/index/notice");
     $request->setBizContent(json_encode($bizcontent));
     $responseResult = $alipayClient->sdkExecute($request);

@@ -83,7 +83,7 @@ class Login extends HomeController
         }
 
         $user = User::where('phone', $post['phone'])->find();
-        if ($user['phone'] != $post['phone'] || $user['password'] != $post['password']) {
+        if ($user['phone'] != $post['phone'] || $user['password'] != md5($post['password'])) {
             return Result::Error('1000', '账号或密码错误');
         }
         $user->token = password(time());

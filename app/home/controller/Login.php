@@ -13,6 +13,8 @@ use app\HomeController;
 use think\facade\Cache;
 use app\Request;
 use app\home\help\Result;
+use think\facade\Config;
+
 class Login extends HomeController
 {
 
@@ -27,20 +29,20 @@ class Login extends HomeController
             'password|密码' => 'require',
             'phone|手机号' => 'require|number|unique:admin_user',
             'user_code|邀请码' => 'require',
-//            'code|验证码' => 'require',
+            'code|验证码' => 'require',
         ]);
         if (!$validate->check($post)) {
             return Result::Error('1000', $validate->getError());
         }
 
-//        $num = Cache::get($post['phone']);
-//        if ($num != $post['code']) {
-//            return Result::Error('1000', '验证码错误,或已超时');
-//        }
+        $num = Cache::get($post['phone']);
+        if ($num != $post['code']) {
+            return Result::Error('1000', '验证码错误,或已超时');
+        }
         $str = md5(time());
         $token = substr($str, 5, 7);
         $user = [
-//            'name' => $post['name'],
+            'name' => $post['phone'],
             'password' => $post['password'],
             'phone' => $post['phone'],
             'user_code' => $token,//推荐码
@@ -117,6 +119,36 @@ class Login extends HomeController
         }
 
 
+    }
+
+    //发送短信
+    public function sms(Request $request)
+    {
+        $phone = input('post.phone');
+        if (empty($phone) || !validatePhone($phone)) {
+            return json(['code' => 100, 'msg' => '请输入正确的手机号!']);
+        }
+        $sign = Config::get('alisms.SignName');
+        $code = Config::get('alisms.TemplateCode');
+        $ak = Config::get('alisms.AccessKeyId');
+        $sk = Config::get('alisms.Secret');
+        $num = mt_rand(1000, 9999);
+        // 请求的参数
+        $params = [
+            'phone' => $phone,
+            'sign' => $sign,
+            'code' => $code,
+            'param' => json_encode([
+                'code' => $num,
+            ])
+        ];
+        $res = send_sms($ak, $sk, $params);
+        if ($res['Code'] === 'OK') {
+            Cache::set($phone, $num, 120);
+            return Result::Success($num, '验证码发送成功');
+        } else {
+            return Result::Error('1000', '验证码发送失败,请稍后再试');
+        }
     }
 
 }

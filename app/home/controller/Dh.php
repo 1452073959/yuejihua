@@ -523,6 +523,7 @@ class Dh extends HomeController
             ->where('user_id', $user['id'])
             ->where($where)
             ->where('plan_status', 'in', '2,3,4')
+            ->order('id', 'desc')
             ->paginate(10);
 
         return Result::Success($order, '成功');

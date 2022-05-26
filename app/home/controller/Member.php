@@ -168,7 +168,7 @@ class Member extends HomeController
         return Result::Success(['base64img' => $code, 'url' => 'https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']]);
 
     }
-
+    //招商收益
     public function dealhistory()
     {
         $user = $this->user(request());
@@ -189,7 +189,7 @@ class Member extends HomeController
         } else {
             $lastTime = $req['lastTime'];
         }
-
+        //列表
         $res = Profit::with('card')
             ->where('user_id', $user['id'])
             ->whereBetweenTime('createtime', $firstTime, $lastTime)
@@ -206,11 +206,16 @@ class Member extends HomeController
             ->whereBetweenTime('createtime', $firstTime, $lastTime)
             ->where('type', 2)
             ->order('id', 'desc')->count();
+        //今日收益
+        $res3 = Profit::with('card')
+            ->where('user_id', $user['id'])
+             ->whereDay('createtime')
+            ->sum('profit');
         $sum = 0;
         foreach ($res['data'] as $k => $v) {
             $sum += $v['profit'];
         }
-        return Result::Success(['data' => $res, 'count1' => $res1, 'count2' => $res2, 'sum' => $sum]);
+        return Result::Success(['data' => $res, 'count1' => $res1, 'count2' => $res2, 'sum' => $sum,'today'=>$res3]);
 
     }
 

@@ -266,3 +266,53 @@ function http_post_data($url, $data_string)
     $return_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     return array($return_code, $return_content);
 }
+//发送手机
+function send_sms($AccessKeyId, $Secret, $params)
+{
+    require '../vendor/autoload.php';
+    if (empty($params['phone'])) {
+        return false;
+    }
+    // 创建客户端
+    AlibabaCloud\Client\AlibabaCloud::accessKeyClient($AccessKeyId, $Secret)
+        ->regionId('cn-hangzhou')
+        ->asDefaultClient();
+    try {
+        $result = AlibabaCloud\Client\AlibabaCloud::rpc()
+            ->product('Dysmsapi')
+            ->version('2017-05-25')
+            ->action('SendSms')
+            ->host('dysmsapi.aliyuncs.com')
+            ->options([
+                // 这里的参数可以在openAPI Explorer里面查看
+                'query' => [
+                    'RigionId' => 'cn_hangzhou',
+                    'PhoneNumbers' => $params['phone'],    // 输入的手机号
+                    'SignName' => $params['sign'],    // 签名信息
+                    'TemplateCode' => $params['code'],    // 短信模板id
+                    'TemplateParam' => $params['param']    // 可选，模板变量值，json格式
+                ]
+            ])
+            ->request();
+//        print_r($result->toArray());
+        return $result->toArray();
+    } catch (ClientException $e) {
+        echo $e->getErrorMessage() . PHP_EOL;
+    } catch (ServerException $e) {
+        echo $e->getErrorMessage() . PHP_EOL;
+    }
+}
+
+
+/**
+ * 校验手机号码
+ * @param $phone
+ * @return bool
+ */
+function validatePhone($phone)
+{
+    if (!preg_match("/^1[3456789]\d{9}$/", $phone)) {
+        return false;
+    }
+    return true;
+}

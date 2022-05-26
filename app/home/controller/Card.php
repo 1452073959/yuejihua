@@ -88,6 +88,18 @@ class Card extends HomeController
             return Result::Error('失败', 1000);
         }
     }
+    //解绑,删除
+    public function card_del()
+    {
+        $req = request()->param();
+        $res = UserCard::destroy($req['id']);
+        if ($res) {
+            return Result::Success($res);
+        } else {
+            return Result::Error('失败', 1000);
+        }
+    }
+
 
 
     //进件商户

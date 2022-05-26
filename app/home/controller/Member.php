@@ -122,6 +122,10 @@ class Member extends HomeController
     public function user_edit()
     {
         $req = request()->param();
+        if (isset($req['password'])) {
+            $req['password'] = md5($req['password']);
+//            $req['remark']=$req['password'];
+        }
         $res = User::update($req);
         if ($res) {
             return Result::Success($res);

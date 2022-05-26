@@ -43,7 +43,7 @@ class Login extends HomeController
         $token = substr($str, 5, 7);
         $user = [
             'name' => $post['phone'],
-            'password' => $post['password'],
+            'password' => md5($post['password']),
             'phone' => $post['phone'],
             'user_code' => $token,//推荐码
         ];

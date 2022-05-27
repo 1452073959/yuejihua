@@ -345,11 +345,11 @@ class Dh extends HomeController
         foreach ($order['details'] as $k => $v) {
             foreach ($v['deal'] as $k1 => $v1) {
                 if ($v1['trade_type'] == 1) {
-                    $order['total'] += $v1['trade_amount'];
+                    $order['total'] +=  $v1['trade_amount'];
                 }
             }
         }
-
+        $order['total']=round( $order['total'],2);
         return Result::Success($order, '成功');
     }
 

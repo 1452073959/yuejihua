@@ -161,13 +161,13 @@ class Member extends HomeController
     }
 
 
-    //注册
+    //注册二维码
     public function code(Request $request)
     {
 
         $user = $this->user($request);
 
-        $code = tudincode('https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']);
+        $code = tudincode('http://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']);
 //        $code = 'https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['pushing_code'];
         return Result::Success(['base64img' => $code, 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']]);
 

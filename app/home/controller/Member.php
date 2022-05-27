@@ -220,7 +220,7 @@ class Member extends HomeController
         foreach ($res['data'] as $k => $v) {
             $sum += $v['profit'];
         }
-        return Result::Success(['data' => $res, 'count1' => $res1, 'count2' => $res2, 'sum' => $sum, 'today' => $res3]);
+        return Result::Success(['data' => $res, 'count1' => $res1, 'count2' => $res2, 'sum' =>round($sum,2) , 'today' => $res3]);
 
     }
 
@@ -230,7 +230,6 @@ class Member extends HomeController
     {
         $req = $request->param();
         $user = $this->user($request);
-        dump($user->toArray());
         $validate = new \think\Validate();
         $validate->rule([
             'name|姓名' => 'require',
@@ -265,6 +264,15 @@ class Member extends HomeController
             }
             $resultCode = transfer4($req['account'], $req['name'], round($req['money'], 2));
             if (!empty($resultCode) && $resultCode->code == 10000) {
+                $tixian=[
+                    'user_id'=>$user['id'],
+                    'type'=>$req['type'],
+                    'name'=>$req['name'],
+                    'account'=>$req['account'],
+                    'money'=>$req['money'],
+                    'time'=>date('Y-m-d H:i:s',time())
+                ];
+                Db::name('tixian_history')->insert($tixian);
                 // 提交事务
                 Db::commit();
                 return Result::Success($resultCode->msg, '打款成功');
@@ -279,6 +287,22 @@ class Member extends HomeController
             return Result::Error('1000', $e->getMessage());
         }
 
+    }
+
+    //提现记录
+    public function tixian_history(Request $request)
+    {
+        $user = $this->user($request);
+       $data= Db::name('tixian_history')->where('user_id',$user['id'])->paginate(10);
+        return Result::Success($data,'成功');
+    }
+
+
+    //用户信息
+    public function userinfo(Request $request)
+    {
+        $user = $this->user($request);
+        return Result::Success($user,'成功');
     }
 
 

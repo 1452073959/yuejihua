@@ -202,7 +202,7 @@ function transfer4($phone,$name,$amount)
     $privateKey = Config::get('alisms.privateKeyapp');
     $aop = new \AopClient ();
     $aop->gatewayUrl = 'https://openapi.alipay.com/gateway.do';//支付宝网关
-    $aop->appId = '2021003125693766';
+    $aop->appId = '2021003131608441';
     $aop->rsaPrivateKey = $privateKey;
     $aop->apiVersion = '1.0';
     $aop->signType = 'RSA2';
@@ -239,7 +239,7 @@ function transfer6($amount,$out_trade_no,$subject)
     $alipayPublicKey = Config::get('alisms.alipayPublicKeyapp');
     $alipayConfig = new AlipayConfig();
     $alipayConfig->setServerUrl("https://openapi.alipaydev.com/gateway.do");
-    $alipayConfig->setAppId("2021003125693766");
+    $alipayConfig->setAppId("2021003131608441");
     $alipayConfig->setPrivateKey($privateKey);
     $alipayConfig->setFormat("json");
     $alipayConfig->setAlipayPublicKey($alipayPublicKey);

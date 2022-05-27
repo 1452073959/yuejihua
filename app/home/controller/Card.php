@@ -47,6 +47,7 @@ class Card extends HomeController
         $date=date('d',time());
         $card = UserCard::with('user')->where('user_id', $user['id'])
             ->where('card_type', $req['card_type'])
+            ->where('card_status', 1)
             ->select();
 
         foreach ($card as $k => $v) {
@@ -101,7 +102,7 @@ class Card extends HomeController
     public function card_del()
     {
         $req = request()->param();
-        $res = UserCard::destroy($req['id']);
+        $res = UserCard::update(['card_status'=>2],$req['id']);
         if ($res) {
             return Result::Success($res);
         } else {

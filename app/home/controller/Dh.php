@@ -120,6 +120,7 @@ class Dh extends HomeController
             }
             $v->save();
         }
+        return 'ok';
     }
 
 

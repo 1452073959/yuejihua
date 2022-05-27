@@ -44,6 +44,7 @@ class Card extends HomeController
     {
         $user = $this->user(request());
         $req = request()->param();
+        $date=date('d',time());
         $card = UserCard::with('user')->where('user_id', $user['id'])
             ->where('card_type', $req['card_type'])
             ->select();
@@ -51,6 +52,14 @@ class Card extends HomeController
         foreach ($card as $k => $v) {
             if ($v['channel']) {
                 $card[$k]['channel'] = explode(',', $v['channel']);
+            }
+            if($v['repayment_date']){
+                if($v['repayment_date']>$date){
+                    $card[$k]['distance']=$v['repayment_date']-$date;
+                }else{
+                    $date2=date('Y-m-d');
+                    $card[$k]['distance']=$v['repayment_date']+date("t",strtotime($date2))-$date;
+                }
             }
         }
 

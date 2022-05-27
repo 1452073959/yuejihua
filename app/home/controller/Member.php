@@ -167,9 +167,9 @@ class Member extends HomeController
 
         $user = $this->user($request);
 
-        $code = tudincode('http://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']);
+        $code = tudincode('http://' . $_SERVER['HTTP_HOST'] . '/h5/index.html#/?' . 'code=' . $user['user_code']);
 //        $code = 'https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['pushing_code'];
-        return Result::Success(['base64img' => $code, 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['user_code']]);
+        return Result::Success(['base64img' => $code, 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/h5/index.html#/?' . 'code=' . $user['user_code']]);
 
     }
 

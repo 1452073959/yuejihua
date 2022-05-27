@@ -102,7 +102,7 @@ class Card extends HomeController
     public function card_del()
     {
         $req = request()->param();
-        $res = UserCard::update(['card_status'=>2],$req['id']);
+        $res = UserCard::update(['card_status'=>2],['id'=>$req['id']]);
         if ($res) {
             return Result::Success($res);
         } else {

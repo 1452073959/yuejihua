@@ -188,7 +188,7 @@ class Login extends HomeController
     //版本更新
     public function version(Request $request)
     {
-        return Result::Success( ['link' => 'https://translate.google.cn/', 'version_number' => 'xxx', 'version' => '1.4.2'], '成功');
+        return Result::Success( ['link' => 'https://tudin.oss-cn-hangzhou.aliyuncs.com/beta/sourceletterlife1.0.0.apk', 'version_number' => 'xxx', 'version' => '1.0.0'], '成功');
 
     }
 

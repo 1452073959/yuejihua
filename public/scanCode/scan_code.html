@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>注册页面</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <script src="./js/flexible.js" type="text/javascript"></script>
+    <script src="./js/zepto.min.js" type="text/javascript"></script>
+</head>
+<style>
+    #weixin-tip {
+        display: none;
+        position: fixed;
+        left: 0;
+        top: 0;
+        background: rgba(0, 0, 0, 0.8);
+        filter: alpha(opacity=80);
+        width: 100%;
+        height: 100%;
+        z-index: 100;
+    }
+
+    #weixin-tip p {
+        text-align: center;
+        margin-top: 10%;
+        padding: 0 5%;
+        position: relative;
+    }
+
+    #weixin-tip .close {
+        color: #fff;
+        padding: 5px;
+        font: bold 20px/24px simsun;
+        text-shadow: 0 1px 0 #ddd;
+        position: absolute;
+        top: 0;
+        left: 5%;
+    }
+</style>
+<body>
+
+
+<!--头像-->
+<div class="head">
+    <div class="img"><img src="./img/head.png"></div>
+    <p>app 注册</p>
+</div>
+<!--注册-->
+<div id="weixin-tip"><p><img src="img/1630917443(1).jpg" alt=""/></p></div>
+<div class="layui-form layui-form-pane">
+    <form action="#">
+        <!-- <div class="item">
+        <input type="text" id="username" name="username" maxlength="11" placeholder="请输入您的用户名"
+               autocomplete="off" class="name">
+    </div> -->
+
+        <div class="item">
+            <input type="text" id="tel" name="phone" maxlength="11" placeholder="请输入您的手机号" autocomplete="off"
+                   class="name">
+        </div>
+
+        <div class="item">
+            <input type="text" name="code" id="code" maxlength="4" placeholder="请输入验证码" autocomplete="off"
+                   class="vcode">
+            <span id="vcode">发送验证码</span>
+        </div>
+        <div class="item">
+            <input type="text" name="user_code" placeholder="请输入您的邀请码" value="" autocomplete="off" readonly
+                   id="pushing_code" class="password">
+        </div>
+        <div class="item">
+            <input type="password" name="password" placeholder="请输入您的密码" autocomplete="off" class="password">
+        </div>
+        <div class="submit">
+            <button type="button" lay-filter="sub" lay-submit>注&nbsp;册</button>
+        </div>
+    </form>
+</div>
+
+<!--尾部-->
+<div class="footer">
+    <div class="">
+        <button style=" background: none; margin-bottom: 0.2rem">
+            <a href="https://tudin.oss-cn-hangzhou.aliyuncs.com/%E5%BF%AB%E4%BB%98%E9%80%9A1.1.8.apk"
+               style="font-size: 0.24rem; color: #1f6ecf" id="myId">已有账号，下载APP</a>
+        </button>
+    </div>
+</div>
+</body>
+
+</html>
+<script src="https://www.layuicdn.com/layui/layui.js"></script>
+<script src="https://www.jq22.com/jquery/jquery-3.3.1.js"></script>
+<script>
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split("=");
+            if (pair[0] == variable) {
+                return pair[1];
+            }
+        }
+        return (false);
+    }
+
+    var a = getQueryVariable('code');
+    $("#pushing_code").val(a);
+    $.ajax({
+        //请求方式
+        type: "POST",
+        //请求地址
+        url: "http://47.114.116.249:1314/home/login/version/",
+
+        //请求成功
+        success: function (result) {
+            console.log(result);
+            if (result.code == 666) {
+                $("#myId").attr("href", result.data.link);
+            } else {
+                layer.msg(result.msg)
+            }
+
+        },
+        //请求失败，包含具体的错误信息
+        error: function (e) {
+            console.log(e.status);
+            console.log(e.responseText);
+        }
+    });
+    layui.use(['form', 'layer'], function () {
+        var form = layui.form,
+            $ = layui.jquery;
+
+        // 验证码
+        var time = 60;
+        $('#vcode').click(function () {
+            var phone = $('#tel').val();
+            if (!/^1[3456789]\d{9}$/.test(phone)) {
+                layer.msg("请先输入正确帐号")
+                return
+            }
+            if ($(this).hasClass('disabled')) {
+                return
+            }
+
+            $.ajax({
+                url:"http://47.114.116.249:1314/home/login/sms",
+                type:"post",
+                dataType:"json",
+                data:{"phone":phone},
+                success:function(res){
+
+                    if (res.code == 666) {
+                        layer.msg(res.msg, {
+                            time: 1000,
+                        }, function () {
+                            $('#vcode').addClass('disabled')
+                            $('#vcode').text("倒计时 " + time)
+                            var timer = setInterval(function () {
+                                time--
+                                $('#vcode').text("倒计时 " + time)
+                                if (time == 0) {
+                                    $('#vcode').text("发送验证码 ");
+                                    clearInterval(timer)
+                                    $('#vcode').removeClass("disabled ");
+                                    time = 60
+                                }
+                            }, 1000)
+                        });
+                    }else {
+                        layer.msg(res.msg)
+                    }
+                },
+                error:function(){
+                    console.log("请求error");
+                }
+
+            })
+
+        });
+
+        form.on('submit(sub)', function (data) {
+            $.post("http://47.114.116.249:1314/home/login/register", data.field, function (res) {
+                layer.msg(res.msg)
+            });
+        })
+
+    })
+</script>
+
+
+<script>
+    var is_weixin = (function () {
+        return navigator.userAgent.toLowerCase().indexOf('micromessenger') !== -1
+    })();
+    window.onload = function () {
+        var winHeight = typeof window.innerHeight != 'undefined' ? window.innerHeight : document.documentElement.clientHeight; //兼容IOS，不需要的可以去掉
+
+        var tip = document.getElementById('weixin-tip');
+        var close = document.getElementById('close');
+        if (is_weixin) {
+
+            tip.style.height = winHeight + 'px'; //兼容IOS弹窗整屏
+            tip.style.display = 'block';
+            return false;
+
+            close.onclick = function () {
+                tip.style.display = 'none';
+            }
+        }
+    }
+</script>

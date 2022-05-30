@@ -417,14 +417,16 @@ class Dh extends HomeController
         $plan = PlanDeal::with(['card', 'user', 'PlanDetails'])->where('trade_type', 1)->where('trade_status', 1)->select();
 
         foreach ($plan as $k => $v) {
+            //   dump($v->toArray());
             // 启动事务
             Db::startTrans();
             try {
                 //消费参数
                 $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'city' => $v['city']];
                 if (time() > strtotime($v['trade_time'])) {
+                            // dump(strtotime($v['trade_time']));
                     $a = $this->payOrderCreate($arr);
-                    dump($a);
+                    // dump($a);
                     $res = PlanDeal::find($v['id']);
 
                     //写入交易返回

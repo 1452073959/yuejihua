@@ -31,12 +31,14 @@ class Member extends HomeController
         Db::startTrans();
         try {
             $code = Memberorder::where('order_status', 2)->where('merber_code', $req['merber_code'])->find();
+              if (!$code) {
+                return Result::Error('1000', '请确认权益码是否有效');
+            }
             $code->order_status = 4;
             $code->phone_merber = $req['phone'];
             $code->save();
-            if (!$code) {
-                return Result::Error('1000', '请确认权益码是否有效');
-            }
+                                               
+
             $user = User::where('phone', $req['phone'])->find();
             if (!$user) {
                 return Result::Error('1000', '请确认账户是否存在');
@@ -51,6 +53,8 @@ class Member extends HomeController
 
             if ($user) {
                 $pid = User::find($user['pid']);
+                
+                
                 //直属上级分润
                 if ($pid['vip_label'] == 2) {
                     $profit = [
@@ -79,9 +83,12 @@ class Member extends HomeController
                         'tranTime' => date('Y-m-d H:i:s', time()),
                         'describe' => '招商分润' . $user['phone'],
                     ];
+                }else{
+                            return Result::Error('1000', '上级不是会员!');
                 }
 
                 Profit::create($profit);
+  
 
                 $userrecruit_balance = User::where('id', $profit['user_id'])->find();
                 $userrecruit_balance->recruit_balance = $userrecruit_balance['recruit_balance'] + $profit['profit'];

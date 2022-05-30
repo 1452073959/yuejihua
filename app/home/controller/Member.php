@@ -31,13 +31,13 @@ class Member extends HomeController
         Db::startTrans();
         try {
             $code = Memberorder::where('order_status', 2)->where('merber_code', $req['merber_code'])->find();
-              if (!$code) {
+            if (!$code) {
                 return Result::Error('1000', '请确认权益码是否有效');
             }
             $code->order_status = 4;
             $code->phone_merber = $req['phone'];
             $code->save();
-                                               
+
 
             $user = User::where('phone', $req['phone'])->find();
             if (!$user) {
@@ -49,71 +49,68 @@ class Member extends HomeController
 
             $user->vip_label = 2;
             $user->save();
+            if ($code['is_special'] == 2) {
+                if ($user) {
+                    $pid = User::find($user['pid']);
+                    //直属上级分润
+                    if ($pid['vip_label'] == 2) {
+                        $profit = [
+                            'user_id' => $pid['id'],//当前用户
+                            'type' => 2,
+                            'createtime' => time(),
+                            'profit' => 420,
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => '招商分润' . $user['phone'],
+                        ];
+                    } elseif ($pid['vip_label'] == 3) {
+                        $profit = [
+                            'user_id' => $pid['id'],//当前用户
+                            'type' => 2,
+                            'createtime' => time(),
+                            'profit' => 480,
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => '招商分润' . $user['phone'],
+                        ];
+                    } elseif ($pid['vip_label'] == 4) {
+                        $profit = [
+                            'user_id' => $pid['id'],//当前用户
+                            'type' => 2,
+                            'createtime' => time(),
+                            'profit' => 570,
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => '招商分润' . $user['phone'],
+                        ];
+                    } else {
+                        return Result::Error('1000', '上级不是会员!');
+                    }
 
-
-            if ($user) {
-                $pid = User::find($user['pid']);
-                
-                
-                //直属上级分润
-                if ($pid['vip_label'] == 2) {
-                    $profit = [
-                        'user_id' => $pid['id'],//当前用户
-                        'type' => 2,
-                        'createtime' => time(),
-                        'profit' => 420,
-                        'tranTime' => date('Y-m-d H:i:s', time()),
-                        'describe' => '招商分润' . $user['phone'],
-                    ];
-                } elseif ($pid['vip_label'] == 3) {
-                    $profit = [
-                        'user_id' => $pid['id'],//当前用户
-                        'type' => 2,
-                        'createtime' => time(),
-                        'profit' => 480,
-                        'tranTime' => date('Y-m-d H:i:s', time()),
-                        'describe' => '招商分润' . $user['phone'],
-                    ];
-                } elseif ($pid['vip_label'] == 4) {
-                    $profit = [
-                        'user_id' => $pid['id'],//当前用户
-                        'type' => 2,
-                        'createtime' => time(),
-                        'profit' => 570,
-                        'tranTime' => date('Y-m-d H:i:s', time()),
-                        'describe' => '招商分润' . $user['phone'],
-                    ];
-                }else{
-                            return Result::Error('1000', '上级不是会员!');
-                }
-
-                Profit::create($profit);
-  
-
-                $userrecruit_balance = User::where('id', $profit['user_id'])->find();
-                $userrecruit_balance->recruit_balance = $userrecruit_balance['recruit_balance'] + $profit['profit'];
-                $userrecruit_balance->save();
-                $array = explode(',', $user['user_pid']);
-                $array = array_slice($array, 0, 9);
-                array_pop($array);
-                foreach ($array as $k => $v) {
-                    $profit = [
-                        'user_id' => $v,//当前用户
-                        'type' => 2,
-                        'createtime' => time(),
-                        'profit' => 30,
-                        'tranTime' => date('Y-m-d H:i:s', time()),
-                        'describe' => '招商分润' . $user['phone'],
-                    ];
                     Profit::create($profit);
+
 
                     $userrecruit_balance = User::where('id', $profit['user_id'])->find();
                     $userrecruit_balance->recruit_balance = $userrecruit_balance['recruit_balance'] + $profit['profit'];
                     $userrecruit_balance->save();
+                    $array = explode(',', $user['user_pid']);
+                    $array = array_slice($array, 0, 9);
+                    array_pop($array);
+                    foreach ($array as $k => $v) {
+                        $profit = [
+                            'user_id' => $v,//当前用户
+                            'type' => 2,
+                            'createtime' => time(),
+                            'profit' => 30,
+                            'tranTime' => date('Y-m-d H:i:s', time()),
+                            'describe' => '招商分润' . $user['phone'],
+                        ];
+                        Profit::create($profit);
+
+                        $userrecruit_balance = User::where('id', $profit['user_id'])->find();
+                        $userrecruit_balance->recruit_balance = $userrecruit_balance['recruit_balance'] + $profit['profit'];
+                        $userrecruit_balance->save();
+                    }
                 }
-
-
             }
+
             // 提交事务
             Db::commit();
             return Result::Success($user, '开通成功,请重新登陆');
@@ -145,17 +142,28 @@ class Member extends HomeController
     public function memberpay(Request $request)
     {
         $user = $this->user($request);
+        $req = $request->param();
         $str = md5(time());
         $code = substr($str, 5, 7);
         $out_trade_no = date('Ymd') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);//订单号，自己生成
         $mermber = new Memberorder();
         $mermber->no = $out_trade_no;
         $mermber->user_id = $user['id'];
+        $mermber->is_special = $req['is_special'];
         $mermber->merber_code = $code;
-        $payorder = transfer6(0.1, $out_trade_no, $user['name'] . '的会员订单');
+        if ($req['is_special'] == 1) {
+            $payorder = transfer6(1, $out_trade_no, $user['name'] . '的会员订单');
+        } else {
+            $payorder = transfer6(998, $out_trade_no, $user['name'] . '的会员订单');
+        }
         $mermber->order_pay = $payorder;
         $mermber->save();
         return $payorder;
+    }
+
+    public function special()
+    {
+        return Result::Success(['is_special' => 1], '成功');
     }
 
     //权益码列表
@@ -227,7 +235,7 @@ class Member extends HomeController
         foreach ($res['data'] as $k => $v) {
             $sum += $v['profit'];
         }
-        return Result::Success(['data' => $res, 'count1' => $res1, 'count2' => $res2, 'sum' =>round($sum,2) , 'today' => $res3]);
+        return Result::Success(['data' => $res, 'count1' => $res1, 'count2' => $res2, 'sum' => round($sum, 2), 'today' => $res3]);
 
     }
 
@@ -271,13 +279,13 @@ class Member extends HomeController
             }
             $resultCode = transfer4($req['account'], $req['name'], round($req['money'], 2));
             if (!empty($resultCode) && $resultCode->code == 10000) {
-                $tixian=[
-                    'user_id'=>$user['id'],
-                    'type'=>$req['type'],
-                    'name'=>$req['name'],
-                    'account'=>$req['account'],
-                    'money'=>$req['money'],
-                    'time'=>date('Y-m-d H:i:s',time())
+                $tixian = [
+                    'user_id' => $user['id'],
+                    'type' => $req['type'],
+                    'name' => $req['name'],
+                    'account' => $req['account'],
+                    'money' => $req['money'],
+                    'time' => date('Y-m-d H:i:s', time())
                 ];
                 Db::name('tixian_history')->insert($tixian);
                 // 提交事务
@@ -300,8 +308,8 @@ class Member extends HomeController
     public function tixian_history(Request $request)
     {
         $user = $this->user($request);
-       $data= Db::name('tixian_history')->where('user_id',$user['id'])->paginate(10);
-        return Result::Success($data,'成功');
+        $data = Db::name('tixian_history')->where('user_id', $user['id'])->paginate(10);
+        return Result::Success($data, '成功');
     }
 
 
@@ -309,7 +317,7 @@ class Member extends HomeController
     public function userinfo(Request $request)
     {
         $user = $this->user($request);
-        return Result::Success($user,'成功');
+        return Result::Success($user, '成功');
     }
 
 

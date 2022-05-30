@@ -17,3 +17,4 @@ composer.phar
 app/test/
 app/home/help/
 vendor
+/config/alisms.php

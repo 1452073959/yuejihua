@@ -99,11 +99,12 @@ class Index extends HomeController
             $order->save();
 
             $count = Memberorder::where('user_id', $order['user_id'])->where('order_status', 'in', [2,4])->field('order_status,id,merber_code,order_pay,phone_merber')->count();
-            if($count>=3){
+            if($count>=4){
               $user=  User::find($order['user_id']);
               $user->vip_label = 3;
               $user->save();
-            }elseif ($count>=20){
+            }
+            if ($count>=21){
                 $user=  User::find($order['user_id']);
                 $user->vip_label = 4;
                 $user->save();

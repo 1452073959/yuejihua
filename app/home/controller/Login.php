@@ -83,6 +83,9 @@ class Login extends HomeController
         }
 
         $user = User::where('phone', $post['phone'])->find();
+        if(!$user){
+            return Result::Error('1000', '账号不存在');
+        }
         if ($user['phone'] != $post['phone'] || $user['password'] != md5($post['password'])) {
             return Result::Error('1000', '账号或密码错误');
         }

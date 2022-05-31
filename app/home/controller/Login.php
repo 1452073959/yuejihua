@@ -180,7 +180,9 @@ class Login extends HomeController
                 $fileName = $file->getOriginalName();
                 // 上传到本地服务器
                 $info = \think\facade\Filesystem::disk('public')->putFileAs('/upload/avatar', $file, $fileName);
-                $code = tudincode('http://' . $_SERVER['HTTP_HOST'] . '/' . $info);
+                $img = file_get_contents ('http://' . $_SERVER['HTTP_HOST'] . '/' . $info);
+
+                $code = base64_encode ( $img );
 
                 return Result::Success(['path' => 'http://' . $_SERVER['HTTP_HOST'] . '/' . $info,'base64'=>$code], '上传成功');
             }

@@ -143,6 +143,10 @@ class Member extends HomeController
     {
         $user = $this->user($request);
         $req = $request->param();
+        $code = Memberorder::where('order_status', 2)->where('user_id', $user['id'])->count();
+        if($code==1&&$user['vip_label']==1){
+            return Result::Error(1000,'购买更多,请先激活会员权益!');
+        }
         $str = md5(time());
         $code = substr($str, 5, 7);
         $out_trade_no = date('Ymd') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);//订单号，自己生成
@@ -181,7 +185,9 @@ class Member extends HomeController
     {
 
         $user = $this->user($request);
-
+        if($user['vip_label']==1){
+            return Result::Error('1000','请先开通会员');
+        }
         $code = tudincode('http://' . $_SERVER['HTTP_HOST'] . '/h5/index.html#/?' . 'code=' . $user['user_code']);
 //        $code = 'https://' . $_SERVER['HTTP_HOST'] . '/scanCode/scan_code.html?' . 'code=' . $user['pushing_code'];
         return Result::Success(['base64img' => $code, 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/h5/index.html#/?' . 'code=' . $user['user_code']]);

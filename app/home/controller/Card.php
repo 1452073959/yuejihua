@@ -4,6 +4,8 @@ declare (strict_types=1);
 namespace app\home\controller;
 
 use app\admin\model\UserCard;
+use app\home\help\Dh2;
+use app\home\help\Dh3;
 use app\home\help\Dhxe;
 use app\home\help\Result;
 use app\home\help\Yjh;
@@ -219,7 +221,7 @@ class Card extends HomeController
 
     public function bindcard2()
     {
-        $a = new Dhxe();
+        $a = new Dh2();
         $user = $this->user(request());
         $req = request()->param();
         $out_trade_no = date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
@@ -227,7 +229,7 @@ class Card extends HomeController
         $data = [
             'orderNo' => $out_trade_no,//订单号
             'idCard' => $card['idCardNo'],//身份证号
-            'agencyCode' => 'xt04',//通道编码
+            'agencyCode' => 'xt24',//通道编码
             'accountNo' => $card['card_no'],//卡号
             'holderName' => $card['card_name'],//持卡人姓名
             'tel' => $card['tel'],//电话
@@ -235,7 +237,9 @@ class Card extends HomeController
             'validDate' => $card['expiration_date']//卡有效期
         ];
 
+
         $res = $a->bindCard($data);
+        dump($res);die;
         if ($res[1]['resCode'] == '0000') {
             return Result::Success($res[1]['content'], $res[1]['resMsg']);
         }else{
@@ -243,7 +247,26 @@ class Card extends HomeController
         }
 
     }
-
+//绑定请求3
+    public function bindcard3()
+    {
+        $a = new Dh3();
+        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'mer_license_numb' => $card['idCardNo'],//身份证号
+            'account_numb' => $card['card_no'],//卡号
+            'mer_name' => $card['card_name'],//持卡人姓名
+            'account_mobile' => $card['tel'],//电话
+        ];
+        dump($data);
+        $res = $a->bindCard($data);
+        if ($res[1]['resCode'] == '0000') {
+            return Result::Success($res[1]['content'], $res[1]['resMsg']);
+        }else{
+            return Result::Error(1000, $res[1]['resMsg']);
+        }
+    }
     //短信通知
     public function bindConfirm2()
     {
@@ -271,6 +294,29 @@ class Card extends HomeController
         return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
 
+    public function bindConfirm3()
+    {
+        $a = new Dhxe();
+        $user = $this->user(request());
+        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt24',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'cvn' => $card['cvn2'],//cvn
+            'validDate' => $card['expiration_date'],//卡有效期
+
+        ];
+
+            $card->channel = $card['channel'].',xt24';
+            $card->save();
+
+        return Result::Success($card, '成功');
+    }
+
     //代付
     public function payOrderCreate()
     {
@@ -293,6 +339,7 @@ class Card extends HomeController
             'validDate' => $card['expiration_date'],//卡有效期
             'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
+        dump($data);
         $res = $a->payOrderCreate($data);
         dump($res);
         die;
@@ -352,7 +399,7 @@ class Card extends HomeController
             'orderNo' => $req['orderNo'],//订单号
         ];
         $res = $a->payOrderQuery($data);
-//        dump($res);die;
+        dump($res);die;
         return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
 

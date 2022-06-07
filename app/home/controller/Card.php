@@ -221,7 +221,7 @@ class Card extends HomeController
 
     public function bindcard2()
     {
-        $a = new Dh2();
+        $a = new Dhxe();
         $user = $this->user(request());
         $req = request()->param();
         $out_trade_no = date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
@@ -239,7 +239,7 @@ class Card extends HomeController
 
 
         $res = $a->bindCard($data);
-        dump($res);die;
+
         if ($res[1]['resCode'] == '0000') {
             return Result::Success($res[1]['content'], $res[1]['resMsg']);
         }else{

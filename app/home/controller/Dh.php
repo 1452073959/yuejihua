@@ -15,6 +15,7 @@ use app\admin\model\plan\OrderPlan;
 use app\admin\model\plan\PlanDeal;
 use app\admin\model\plan\PlanDetails;
 use app\admin\model\UserCard;
+use app\home\help\Dh2;
 use app\home\help\Result;
 use app\home\help\Dhxe;
 use app\HomeController;
@@ -27,7 +28,12 @@ class Dh extends HomeController
     //代付
     public function payOrderCreate($req)
     {
-        $a = new Dhxe();
+        if($req['channel']=='xt04'){
+            $a = new Dhxe();
+        }
+        if($req['channel']=='xt24'){
+            $a = new Dh2();
+        }
         $user = $this->user(request());
 //        $req = request()->param();
         $card = UserCard::where('id', $req['id'])->find();
@@ -35,7 +41,7 @@ class Dh extends HomeController
         $data = [
             'orderNo' => $out_trade_no,//订单号
             'idCard' => $card['idCardNo'],//身份证号
-            'agencyCode' => 'xt04',//通道编码
+            'agencyCode' =>$req['channel'],//通道编码
             'accountNo' => $card['card_no'],//卡号
             'holderName' => $card['card_name'],//持卡人姓名
             'tel' => $card['tel'],//电话
@@ -54,7 +60,13 @@ class Dh extends HomeController
     //代还
     public function transferCreate($req)
     {
-        $a = new Dhxe();
+
+        if($req['channel']=='xt04'){
+            $a = new Dhxe();
+        }
+        if($req['channel']=='xt24'){
+            $a = new Dh2();
+        }
         $user = $this->user(request());
 //        $req = request()->param();
         $card = UserCard::where('id', $req['id'])->find();
@@ -62,7 +74,7 @@ class Dh extends HomeController
         $data = [
             'orderNo' => $out_trade_no,//订单号
             'idCard' => $card['idCardNo'],//身份证号
-            'agencyCode' => 'xt04',//通道编码
+            'agencyCode' =>$req['channel'],//通道编码
             'accountNo' => $card['card_no'],//卡号
             'holderName' => $card['card_name'],//持卡人姓名
             'tel' => $card['tel'],//电话
@@ -92,7 +104,19 @@ class Dh extends HomeController
     }
 
     //查询订单/
-    public function query($orderNo)
+    public function queryxt24($orderNo)
+    {
+        $a = new Dh2();
+        $query = ['orderNo' => $orderNo['no']];
+        if ($orderNo['trade_type'] == 1) {
+            $res = $a->payOrderQuery($query);
+        } else {
+            $res = $a->transferQuery($query);
+        }
+        return $res;
+    }
+
+    public function query04($orderNo)
     {
         $a = new Dhxe();
         $query = ['orderNo' => $orderNo['no']];
@@ -108,14 +132,21 @@ class Dh extends HomeController
     {
         $plan = PlanDeal::where('trade_status', 2)->select();
         foreach ($plan as $k => $v) {
-            $res = $this->query($v);
+            if($v['channel']=='xt04'){
+                $res = $this->query04($v);
+            }
+            if($v['channel']=='xt24'){
+                $res = $this->queryxt24($v);
+            }
+
             dump($res);
-            if ($res[1]['resCode'] == '0000') {
+            if ($res[1]['content']['orderStatus'] == 's') {
                 $v->message = $res[1]['content']['desc'];
                 $v->trade_status = 3;
                 Log::write('查询订单' . $v['no'] . $res[1]['content']['desc']);
             } else {
-                $v->message = $res[1]['resMsg'];
+                $v->trade_status = 3;
+                $v->message = $res[1]['content']['desc'];
                 Log::write('查询订单' . $v['no'] . $res[1]['resMsg']);
             }
             $v->save();
@@ -177,7 +208,7 @@ class Dh extends HomeController
                 $plan_detailsid = Db::name('plan_details')->insertGetId($plan_details);
                 if ($req['repayment_mode'] == 1) {
                     //消费
-                    $money = round($req['bill_amount'] / $req['plan_number'] / 0.992,2)+1;
+                    $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1;
                     //日期
                     //最后一个日期
                     $next = isset($req['repayment_date'][$i + 1]) ? $req['repayment_date'][$i + 1] : $req['repayment_date'][$i];
@@ -186,7 +217,7 @@ class Dh extends HomeController
                             'trade_amount' => $money,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
                             'actual_amount' => '0',
-                            'trade_fee' => $money *0.008,
+                            'trade_fee' => $money * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -196,7 +227,7 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_x);
                         //还款
                         $plan_deal_h = [
-                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1))+1,
+                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)) + 1,
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
                             'actual_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)),
                             'trade_fee' => 1.00,
@@ -211,7 +242,7 @@ class Dh extends HomeController
                             'trade_amount' => $money,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + 900),
                             'actual_amount' => '0',
-                            'trade_fee' => $money*0.008,
+                            'trade_fee' => $money * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -221,7 +252,7 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_x);
                         //还款
                         $plan_deal_h = [
-                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1))+1,
+                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)) + 1,
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
                             'actual_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)),
                             'trade_fee' => 1.00,
@@ -235,7 +266,7 @@ class Dh extends HomeController
                     }
 
                 } elseif ($req['repayment_mode'] == 2) {
-                    $money = round($req['bill_amount'] / $req['plan_number'] / 2 / 0.992,2)+0.5;
+                    $money = ceil($req['bill_amount'] / $req['plan_number'] / 2 / 0.992) + 0.5;
                     //消费
                     $next = isset($req['repayment_date'][$i + 1]) ? $req['repayment_date'][$i + 1] : $req['repayment_date'][$i];
                     if ($req['repayment_date'][$i] == $next) {
@@ -243,7 +274,7 @@ class Dh extends HomeController
                             'trade_amount' => $money,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
                             'actual_amount' => '0',
-                            'trade_fee' => $money  *0.008,
+                            'trade_fee' => $money * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -255,7 +286,7 @@ class Dh extends HomeController
                             'trade_amount' => $money,
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
                             'actual_amount' => '0',
-                            'trade_fee' => $money *0.008,
+                            'trade_fee' => $money * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -266,7 +297,7 @@ class Dh extends HomeController
 
                         //还款
                         $plan_deal_h = [
-                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1))+1,
+                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)) + 1,
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
                             'actual_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)),
                             'trade_fee' => 1.00,
@@ -282,7 +313,7 @@ class Dh extends HomeController
                             'trade_amount' => $money,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + 900),
                             'actual_amount' => '0',
-                            'trade_fee' => $money *0.008,
+                            'trade_fee' => $money * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -295,7 +326,7 @@ class Dh extends HomeController
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
                             'actual_amount' => '0',
                             'city' => $req['city'],
-                            'trade_fee' => $money *0.008,
+                            'trade_fee' => $money * 0.008,
                             'trade_type' => 1,
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
@@ -305,7 +336,7 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_x2);
                         //还款
                         $plan_deal_h = [
-                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1))+1,
+                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)) + 1,
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
                             'actual_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)),
                             'trade_fee' => 1.00,
@@ -345,11 +376,11 @@ class Dh extends HomeController
         foreach ($order['details'] as $k => $v) {
             foreach ($v['deal'] as $k1 => $v1) {
                 if ($v1['trade_type'] == 1) {
-                    $order['total'] +=  $v1['trade_amount'];
+                    $order['total'] += $v1['trade_amount'];
                 }
             }
         }
-        $order['total']=round( $order['total'],2);
+        $order['total'] = round($order['total'], 2);
         return Result::Success($order, '成功');
     }
 
@@ -362,12 +393,14 @@ class Dh extends HomeController
         try {
             $order = OrderPlan::find($req['id']);
             $order->plan_status = 3;
+            $order->channel =$req['channel'];
             $order->save();
             $plandeta = PlanDetails::where('plan_id', $order['id'])->select()->toArray();
             $plandeta = array_column($plandeta, 'id');
             $plandeal = PlanDeal::where('plan_details_id', 'in', $plandeta)->select();
             foreach ($plandeal as $k => $v) {
                 $v->trade_status = 1;
+                $v->channel = $req['channel'];
                 $v->save();
             }
             // 提交事务
@@ -395,7 +428,7 @@ class Dh extends HomeController
             $plandeta = array_column($plandeta, 'id');
             $plandeal = PlanDeal::where('plan_details_id', 'in', $plandeta)->select();
             foreach ($plandeal as $k => $v) {
-                if($v['trade_status']!=2||$v['trade_status']!=3){
+                if ($v['trade_status'] != 2 || $v['trade_status'] != 3) {
                     $v->trade_status = 4;
                     $v->save();
                 }
@@ -422,9 +455,9 @@ class Dh extends HomeController
             Db::startTrans();
             try {
                 //消费参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'city' => $v['city']];
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'],'city' => $v['city'], 'channel' => $v['channel']];
                 if (time() > strtotime($v['trade_time'])) {
-                            // dump(strtotime($v['trade_time']));
+                    // dump(strtotime($v['trade_time']));
                     $a = $this->payOrderCreate($arr);
                     // dump($a);
                     $res = PlanDeal::find($v['id']);
@@ -466,12 +499,11 @@ class Dh extends HomeController
             Db::startTrans();
             try {
                 //还款参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id']];
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'channel' => $v['channel']];
                 if (time() > strtotime($v['trade_time'])) {
                     $a = $this->transferCreate($arr);
-//                    $a = ['code' => 0];
-                    dump($a);
                     $res = PlanDeal::find($v['id']);
+
                     //写入交易返回
                     if ($a[1]['resCode'] == '0000') {
                         $res->trade_status = 2;
@@ -492,11 +524,13 @@ class Dh extends HomeController
                         $d = $this->profit($v['user']['id'], $arr, $v['id']);
 
                     } else {
+                        $res->trade_status = 3;
                         $res->message = $a[1]['resMsg'];
                         Log::write('还款订单' . $v['id'] . $a[1]['resMsg']);
                     }
                     $res->save();
                     dump($res->toArray());
+                    dump($a);
                 }
                 // 提交事务
                 Db::commit();
@@ -553,7 +587,7 @@ class Dh extends HomeController
     public function Quota()
     {
         $req = request()->param();
-        $money = round($req['bill_amount'] / $req['plan_number'] / 0.992,2) + 1*$req['plan_number'];
+        $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1 * $req['plan_number'];
         return Result::Success($money, '成功');
     }
 
@@ -858,7 +892,7 @@ class Dh extends HomeController
     //定时删除订单
     public function delplan()
     {
-        OrderPlan::where('plan_status',1)->delete();
+        OrderPlan::where('plan_status', 1)->delete();
     }
 
 }

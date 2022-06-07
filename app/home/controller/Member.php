@@ -167,7 +167,7 @@ class Member extends HomeController
 
     public function special()
     {
-        return Result::Success(['is_special' => 1], '成功');
+        return Result::Success(['is_special' => 0], '成功');
     }
 
     //权益码列表

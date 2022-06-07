@@ -288,7 +288,7 @@ class Card extends HomeController
         $res = $a->bindConfirm($data);
         if ($res[1]['resCode'] == '0000') {
             $card->Signing_status = 2;
-            $card->channel = $card['channel'] . 'xt04';
+            $card->channel = $card['channel'] . ',xt04';
             $card->save();
         }
         return Result::Success($res[1]['content'], $res[1]['resMsg']);

@@ -229,7 +229,7 @@ class Card extends HomeController
         $data = [
             'orderNo' => $out_trade_no,//订单号
             'idCard' => $card['idCardNo'],//身份证号
-            'agencyCode' => 'xt24',//通道编码
+            'agencyCode' => 'xt04',//通道编码
             'accountNo' => $card['card_no'],//卡号
             'holderName' => $card['card_name'],//持卡人姓名
             'tel' => $card['tel'],//电话

@@ -197,7 +197,7 @@ class Dh extends HomeController
             $plan_deal_h = [];
             $plan_deal_x = [];
 //            dump($req['repayment_date']);die;
-
+            $money=  randomDivInt($req['plan_number'],$req['bill_amount']);
             for ($i = 0; $i <= $req['plan_number'] - 1; $i++) {
                 $plan_details = [
                     'plan_id' => $orderplanId,
@@ -208,16 +208,19 @@ class Dh extends HomeController
                 $plan_detailsid = Db::name('plan_details')->insertGetId($plan_details);
                 if ($req['repayment_mode'] == 1) {
                     //消费
-                    $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1;
+//                    $money = ceil($req['bill_amount'] / $req['plan_number'] / 0.992) + 1;
+
+
+//                    dump($money);
                     //日期
                     //最后一个日期
                     $next = isset($req['repayment_date'][$i + 1]) ? $req['repayment_date'][$i + 1] : $req['repayment_date'][$i];
                     if ($req['repayment_date'][$i] == $next) {
                         $plan_deal_x = [
-                            'trade_amount' => $money,
+                            'trade_amount' => ceil($money[$i]/0.992)+1,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
                             'actual_amount' => '0',
-                            'trade_fee' => $money * 0.008,
+                            'trade_fee' => ($money[$i]/0.992)* 0.008 ,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -227,9 +230,9 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_x);
                         //还款
                         $plan_deal_h = [
-                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)) + 1,
+                            'trade_amount' =>  $money[$i],
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
-                            'actual_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)),
+                            'actual_amount' =>  $money[$i]-1,
                             'trade_fee' => 1.00,
                             'trade_type' => 2,
                             'card_id' => $req['card_id'],//卡
@@ -239,10 +242,10 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_h);
                     } else {
                         $plan_deal_x = [
-                            'trade_amount' => $money,
+                            'trade_amount' => ceil($money[$i]/0.992)+1,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + 900),
                             'actual_amount' => '0',
-                            'trade_fee' => $money * 0.008,
+                            'trade_fee' => ($money[$i]/0.992)* 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -252,9 +255,9 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_x);
                         //还款
                         $plan_deal_h = [
-                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)) + 1,
+                            'trade_amount' =>  $money[$i],
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
-                            'actual_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)),
+                            'actual_amount' => $money[$i]-1,
                             'trade_fee' => 1.00,
                             'trade_type' => 2,
                             'card_id' => $req['card_id'],//卡
@@ -266,15 +269,15 @@ class Dh extends HomeController
                     }
 
                 } elseif ($req['repayment_mode'] == 2) {
-                    $money = ceil($req['bill_amount'] / $req['plan_number'] / 2 / 0.992) + 0.5;
+
                     //消费
                     $next = isset($req['repayment_date'][$i + 1]) ? $req['repayment_date'][$i + 1] : $req['repayment_date'][$i];
                     if ($req['repayment_date'][$i] == $next) {
                         $plan_deal_x1 = [
-                            'trade_amount' => $money,
+                            'trade_amount' =>  ceil($money[$i]/2/0.992)+1,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
                             'actual_amount' => '0',
-                            'trade_fee' => $money * 0.008,
+                            'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -283,10 +286,10 @@ class Dh extends HomeController
                         ];
                         Db::name('plan_deal')->save($plan_deal_x1);
                         $plan_deal_x2 = [
-                            'trade_amount' => $money,
+                            'trade_amount' => ceil($money[$i]/2/0.992),
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
                             'actual_amount' => '0',
-                            'trade_fee' => $money * 0.008,
+                            'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -297,9 +300,9 @@ class Dh extends HomeController
 
                         //还款
                         $plan_deal_h = [
-                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)) + 1,
+                            'trade_amount' => $money[$i],
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
-                            'actual_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)),
+                            'actual_amount' =>  $money[$i]-1,
                             'trade_fee' => 1.00,
                             'trade_type' => 2,
                             'card_id' => $req['card_id'],//卡
@@ -310,10 +313,10 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_h);
                     } else {
                         $plan_deal_x1 = [
-                            'trade_amount' => $money,
+                            'trade_amount' =>  ceil($money[$i]/2/0.992)+1,
                             'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + 900),
                             'actual_amount' => '0',
-                            'trade_fee' => $money * 0.008,
+                            'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
                             'card_id' => $req['card_id'],//卡
@@ -322,11 +325,11 @@ class Dh extends HomeController
                         ];
                         Db::name('plan_deal')->save($plan_deal_x1);
                         $plan_deal_x2 = [
-                            'trade_amount' => $money,
+                            'trade_amount' =>  ceil($money[$i]/2/0.992),
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
                             'actual_amount' => '0',
                             'city' => $req['city'],
-                            'trade_fee' => $money * 0.008,
+                            'trade_fee' => ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
@@ -336,9 +339,9 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_x2);
                         //还款
                         $plan_deal_h = [
-                            'trade_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)) + 1,
+                            'trade_amount' => $money[$i],
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
-                            'actual_amount' => sprintf("%.2f", substr(sprintf("%.3f", $req['bill_amount'] / $req['plan_number']), 0, -1)),
+                            'actual_amount' =>  $money[$i]-1,
                             'trade_fee' => 1.00,
                             'trade_type' => 2,
                             'card_id' => $req['card_id'],//卡
@@ -888,7 +891,6 @@ class Dh extends HomeController
 
         return 'ok';
     }
-
     //定时删除订单
     public function delplan()
     {

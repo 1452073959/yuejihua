@@ -362,3 +362,21 @@ function validatePhone($phone)
     }
     return true;
 }
+//    拆分数字
+function randomDivInt($div,$total){
+    $remain=$total;
+    $max_sum=($div-1)*$div/2;
+    $p=$div; $min=0;
+    $a=array();
+    for($i=0; $i<$div-1; $i++){
+        $max=($remain-$max_sum)/($div-$i);
+        $e=rand($min,$max);
+        $min=$e+1; $max_sum-=--$p;
+        $remain-=$e;
+        $a[$e]=true;
+    }
+    $a=array_keys($a);
+    $a[]=$remain;
+    return $a;
+}
+

@@ -362,7 +362,7 @@ function validatePhone($phone)
     }
     return true;
 }
-//    拆分数字15454
+//    
 function randomDivInt($div,$total){
     $remain=$total;
     $max_sum=($div-1)*$div/2;

@@ -216,9 +216,10 @@ class Dh extends HomeController
                     //最后一个日期
                     $next = isset($req['repayment_date'][$i + 1]) ? $req['repayment_date'][$i + 1] : $req['repayment_date'][$i];
                     if ($req['repayment_date'][$i] == $next) {
+
                         $plan_deal_x = [
                             'trade_amount' => ceil($money[$i]/0.992)+1,
-                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
+                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 7200) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
                             'actual_amount' => '0',
                             'trade_fee' => ($money[$i]/0.992)* 0.008 ,
                             'trade_type' => 1,
@@ -231,7 +232,7 @@ class Dh extends HomeController
                         //还款
                         $plan_deal_h = [
                             'trade_amount' =>  $money[$i],
-                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 7200),
                             'actual_amount' =>  $money[$i]-1,
                             'trade_fee' => 1.00,
                             'trade_type' => 2,
@@ -243,7 +244,7 @@ class Dh extends HomeController
                     } else {
                         $plan_deal_x = [
                             'trade_amount' => ceil($money[$i]/0.992)+1,
-                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + 900),
+                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 7200) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + 900),
                             'actual_amount' => '0',
                             'trade_fee' => ($money[$i]/0.992)* 0.008,
                             'trade_type' => 1,
@@ -256,7 +257,7 @@ class Dh extends HomeController
                         //还款
                         $plan_deal_h = [
                             'trade_amount' =>  $money[$i],
-                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 900),
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x['trade_time']) + 7200),
                             'actual_amount' => $money[$i]-1,
                             'trade_fee' => 1.00,
                             'trade_type' => 2,
@@ -275,7 +276,7 @@ class Dh extends HomeController
                     if ($req['repayment_date'][$i] == $next) {
                         $plan_deal_x1 = [
                             'trade_amount' =>  ceil($money[$i]/2/0.992)+1,
-                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
+                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 7200) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + ((1 + $i) * 900)),
                             'actual_amount' => '0',
                             'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
@@ -287,7 +288,7 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_x1);
                         $plan_deal_x2 = [
                             'trade_amount' => ceil($money[$i]/2/0.992),
-                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 7200),
                             'actual_amount' => '0',
                             'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
@@ -301,7 +302,7 @@ class Dh extends HomeController
                         //还款
                         $plan_deal_h = [
                             'trade_amount' => $money[$i],
-                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 7200),
                             'actual_amount' =>  $money[$i]-1,
                             'trade_fee' => 1.00,
                             'trade_type' => 2,
@@ -314,7 +315,7 @@ class Dh extends HomeController
                     } else {
                         $plan_deal_x1 = [
                             'trade_amount' =>  ceil($money[$i]/2/0.992)+1,
-                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 900) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + 900),
+                            'trade_time' => isset($plan_deal_h['trade_time']) ? date('Y-m-d H:i:s', strtotime($plan_deal_h['trade_time']) + 7200) : date('Y-m-d H:i:s', strtotime($req['repayment_date'][$i]) + 25200 + 900),
                             'actual_amount' => '0',
                             'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
@@ -326,7 +327,7 @@ class Dh extends HomeController
                         Db::name('plan_deal')->save($plan_deal_x1);
                         $plan_deal_x2 = [
                             'trade_amount' =>  ceil($money[$i]/2/0.992),
-                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 900),
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 7200),
                             'actual_amount' => '0',
                             'city' => $req['city'],
                             'trade_fee' => ($money[$i]/2/0.992) * 0.008,
@@ -340,7 +341,7 @@ class Dh extends HomeController
                         //还款
                         $plan_deal_h = [
                             'trade_amount' => $money[$i],
-                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 900),
+                            'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x2['trade_time']) + 7200),
                             'actual_amount' =>  $money[$i]-1,
                             'trade_fee' => 1.00,
                             'trade_type' => 2,

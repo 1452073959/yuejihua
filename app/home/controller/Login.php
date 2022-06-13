@@ -195,7 +195,7 @@ class Login extends HomeController
     //版本更新
     public function version(Request $request)
     {
-        return Result::Success( ['link' => 'https://tudin.oss-cn-hangzhou.aliyuncs.com/beta/sourceletterlife1.0.6.apk', 'version_number' => '新增通道', 'version' => '1.0.6'], '成功');
+        return Result::Success( ['link' => 'https://tudin.oss-cn-hangzhou.aliyuncs.com/beta/sourceletterlife1.0.7.apk', 'version_number' => '更新通道', 'version' => '1.0.7'], '成功');
 
     }
 

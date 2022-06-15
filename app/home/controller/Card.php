@@ -355,6 +355,68 @@ class Card extends HomeController
         return Result::Success($res[1]['content'], $res[1]['resMsg']);
     }
 
+
+
+    public function bindcard5()
+    {
+        $a = new Dh2();
+        $user = $this->user(request());
+        $req = request()->param();
+        $out_trade_no = date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'orderNo' => $out_trade_no,//订单号
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt34',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'cvn' => $card['cvn2'],//cvn
+            'validDate' => $card['expiration_date']//卡有效期
+        ];
+
+//        dump($data);
+
+        $res = $a->bindCard($data);
+
+        if ($res[1]['resCode'] == '0000') {
+            return Result::Success($res[1]['content'], $res[1]['resMsg']);
+        }else{
+            return Result::Error(1000, $res[1]['resMsg']);
+        }
+    }
+
+    //通道3
+    public function bindConfirm5()
+    {
+        $a = new Dh2();
+        $user = $this->user(request());
+        $req = request()->param();
+        $card = UserCard::where('id', $req['id'])->find();
+        $data = [
+            'orderNo' => $req['orderNo'],//订单号
+            'idCard' => $card['idCardNo'],//身份证号
+            'agencyCode' => 'xt34',//通道编码
+            'accountNo' => $card['card_no'],//卡号
+            'holderName' => $card['card_name'],//持卡人姓名
+            'tel' => $card['tel'],//电话
+            'cvn' => $card['cvn2'],//cvn
+            'validDate' => $card['expiration_date'],//卡有效期
+            'smsCode' => $req['smsCode']//短信验证码
+        ];
+        $res = $a->bindConfirm($data);
+        if ($res[1]['resCode'] == '0000') {
+            $card->Signing_status = 2;
+            $card->channel = $card['channel'] . ',xt34';
+            $card->save();
+        }
+        return Result::Success($res[1]['content'], $res[1]['resMsg']);
+    }
+
+
+
+
+
     //代付
     public function payOrderCreate()
     {
@@ -366,7 +428,7 @@ class Card extends HomeController
         $data = [
             'orderNo' => $out_trade_no,//订单号
             'idCard' => $card['idCardNo'],//身份证号
-            'agencyCode' => 'xt31',//通道编码
+            'agencyCode' => 'xt34',//通道编码
             'accountNo' => $card['card_no'],//卡号
             'holderName' => $card['card_name'],//持卡人姓名
             'tel' => $card['tel'],//电话

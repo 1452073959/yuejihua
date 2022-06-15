@@ -31,7 +31,7 @@ class Dh extends HomeController
         if($req['channel']=='xt04'){
             $a = new Dhxe();
         }
-        if($req['channel']=='xt24'||$req['channel']=='xt31'){
+        if($req['channel']=='xt24'||$req['channel']=='xt31'||$req['channel']=='xt34'){
             $a = new Dh2();
         }
         $user = $this->user(request());
@@ -64,7 +64,7 @@ class Dh extends HomeController
         if($req['channel']=='xt04'){
             $a = new Dhxe();
         }
-        if($req['channel']=='xt24'||$req['channel']=='xt31'){
+        if($req['channel']=='xt24'||$req['channel']=='xt31'||$req['channel']=='xt34'){
             $a = new Dh2();
         }
         $user = $this->user(request());
@@ -135,7 +135,7 @@ class Dh extends HomeController
             if($v['channel']=='xt04'){
                 $res = $this->query04($v);
             }
-            if($v['channel']=='xt24'||$v['channel']=='xt31'){
+            if($v['channel']=='xt24'||$v['channel']=='xt31'||$v['channel']=='xt34'){
                 $res = $this->queryxt24($v);
             }
 

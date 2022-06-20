@@ -53,7 +53,7 @@ class Dh extends HomeController
             'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
         $res = $a->payOrderCreate($data);
-        return $res;
+        return ['no'=>$out_trade_no,'res'=>$res];
     }
 
 
@@ -83,7 +83,7 @@ class Dh extends HomeController
             'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
         $res = $a->transferCreate($data);
-        return $res;
+        return ['no'=>$out_trade_no,'res'=>$res];
     }
 
 
@@ -467,14 +467,16 @@ class Dh extends HomeController
                     $res = PlanDeal::find($v['id']);
 
                     //写入交易返回
-                    if ($a[1]['resCode'] == '0000') {
+                    if ($a['res'][1]['resCode'] == '0000') {
                         $res->trade_status = 2;
-                        $res->message = $a[1]['content']['desc'];
-                        $res->no = $a[1]['content']['orderNo'];
-                        Log::write('消费订单' . $v['id'] . $a[1]['content']['desc'] . $a[1]['content']['orderNo']);
+                        $res->message = $a['res'][1]['content']['desc'];
+                        $res->no = $a['res'][1]['content']['orderNo'];
+                        Log::write('消费订单' . $v['id'] . $a['res'][1]['content']['desc'] . $a['res'][1]['content']['orderNo']);
                     } else {
-                        $res->message = $a[1]['resMsg'];
-                        Log::write('消费订单' . $v['id'] . $a[1]['resMsg']);
+                        $res->message = $a['res'][1]['resMsg'];
+                        $res->no = $a['no'];
+                        $res->trade_status = 3;
+                        Log::write('消费订单' . $v['id'] . $a['res'][1]['resMsg']);
                     }
                     $res->save();
                     dump($res->toArray());
@@ -509,11 +511,11 @@ class Dh extends HomeController
                     $res = PlanDeal::find($v['id']);
 
                     //写入交易返回
-                    if ($a[1]['resCode'] == '0000') {
+                    if ( $a['res'][1]['resCode'] == '0000') {
                         $res->trade_status = 2;
-                        $res->message = $a[1]['content']['desc'];
-                        $res->no = $a[1]['content']['orderNo'];
-                        Log::write('还款订单' . $v['id'] . $a[1]['content']['desc'] . $a[1]['content']['orderNo']);
+                        $res->message =  $a['res'][1]['content']['desc'];
+                        $res->no =  $a['res'][1]['content']['orderNo'];
+                        Log::write('还款订单' . $v['id'] .  $a['res'][1]['content']['desc'] .  $a['res'][1]['content']['orderNo']);
                         //计划剩余还款金额
                         $plan = OrderPlan::find($v['PlanDetails']['plan_id']);
                         $plan->pending_amount = $plan['pending_amount'] - $v['trade_amount'];
@@ -529,8 +531,9 @@ class Dh extends HomeController
 
                     } else {
                         $res->trade_status = 3;
-                        $res->message = $a[1]['resMsg'];
-                        Log::write('还款订单' . $v['id'] . $a[1]['resMsg']);
+                        $res->no = $a['no'];
+                        $res->message =  $a['res'][1]['resMsg'];
+                        Log::write('还款订单' . $v['id'] .  $a['res'][1]['resMsg']);
                     }
                     $res->save();
                     dump($res->toArray());

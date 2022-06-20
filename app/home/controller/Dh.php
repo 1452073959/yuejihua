@@ -463,7 +463,7 @@ class Dh extends HomeController
                 if (time() > strtotime($v['trade_time'])) {
                     // dump(strtotime($v['trade_time']));
                     $a = $this->payOrderCreate($arr);
-                    // dump($a);
+                     dump($a);
                     $res = PlanDeal::find($v['id']);
 
                     //写入交易返回

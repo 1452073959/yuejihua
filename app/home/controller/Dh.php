@@ -16,6 +16,7 @@ use app\admin\model\plan\PlanDeal;
 use app\admin\model\plan\PlanDetails;
 use app\admin\model\UserCard;
 use app\home\help\Dh2;
+use app\home\help\Dh4;
 use app\home\help\Result;
 use app\home\help\Dhxe;
 use app\HomeController;
@@ -25,6 +26,81 @@ use think\facade\Log;
 
 class Dh extends HomeController
 {
+    public function pay($req)
+    {
+        $card = UserCard::where('id', $req['id'])->find();
+        $reqData = [
+            'merchantNo' => $req['merchantNo'],//平台下发用户标识
+            'payCardId' =>$card['payCardId'],//支付卡签约ID
+            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',//		回调地址
+            'orderNo' => $out_trade_no = 'xf' . date('Ymd') . time() . rand(1, 999999),//订单号，自己生成//订单号，自己生成,//		订单流水号
+            'storeNo' =>'420000',//获取城市六位地区编码
+            'bankAccount' =>$card['card_no'],//卡号
+            'payType' => 'YK',//YK代还 WK快捷
+            'acqCode' => $req['channel'],//固定值YK必填，WK 快捷请咨询商务
+            'orderAmt' => $req['orderAmount']*100,//交易金额 单位：分
+            'rate' => 0.80,//交易费率 格式 如0.60, 万六十
+            'pro' => 1,//交易代付费 单笔手续费1 单位元,与代付费保持一致
+            'merchType' =>0,//固定值 0
+        ];
+        $a = new Dh4();
+        $res = $a->pay($reqData);
+        return ['no'=>$out_trade_no,'res'=>$res];
+    }
+
+
+    //还款
+    public function hk($req)
+    {
+        $card = UserCard::where('id', $req['id'])->find();
+        $reqData = [
+            'merchantNo' => $req['merchantNo'],//平台下发用户标识
+            'payCardId' =>$card['payCardId'],//支付卡签约ID
+            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',//		回调地址
+            'acqCode' => $req['channel'],//固定值YK必填，WK 快捷请咨询商务
+            'platOrderList' => '',//
+            'orderNo' => $out_trade_no = 'hk' . date('Ymd') . time() . rand(1, 999999),//订单号，自己生成//订单号，自己生成,//		订单流水号
+            'bankAccount' =>$card['card_no'],//卡号
+            'orderAmt' =>$req['orderAmount']*100,//交易金额 单位：分
+            'rate' => 0.5,//交易费率 格式 如0.60, 万六十
+            'pro' => 0.5//交易代付费 单笔手续费1 单位元,与代付费保持一致
+        ];
+        $a = new Dh4();
+        $res = $a->hk($reqData);
+        return ['no'=>$out_trade_no,'res'=>$res];
+    }
+
+
+
+
+
+
+
+
+    //分割,以下失效-------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     //代付
     public function payOrderCreate($req)
     {
@@ -459,24 +535,21 @@ class Dh extends HomeController
             Db::startTrans();
             try {
                 //消费参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'],'city' => $v['city'], 'channel' => $v['channel']];
-                if (time() > strtotime($v['trade_time'])) {
-                    // dump(strtotime($v['trade_time']));
-                    $a = $this->payOrderCreate($arr);
-                     dump($a);
-                    $res = PlanDeal::find($v['id']);
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'channel' => $v['channel'],'merchantNo'=>$v['user']['subMerchantNo']];
 
+                if (time() > strtotime($v['trade_time'])) {
+                    $a = $this->pay($arr);
+                    $res = PlanDeal::find($v['id']);
                     //写入交易返回
-                    if ($a['res'][1]['resCode'] == '0000') {
+                    if ($a['res']['rescode'] == '00') {
                         $res->trade_status = 2;
-                        $res->message = $a['res'][1]['content']['desc'];
-                        $res->no = $a['res'][1]['content']['orderNo'];
-                        Log::write('消费订单' . $v['id'] . $a['res'][1]['content']['desc'] . $a['res'][1]['content']['orderNo']);
-                    } else {
-                        $res->message = $a['res'][1]['resMsg'];
+                        $res->message = $a['res']['resmsg'];
                         $res->no = $a['no'];
+                        Log::write('消费订单成功' . $v['id'] .$a['res']['resmsg'] . $a['no']);
+                    } else {
+                        $res->message = $a['res']['resmsg'];
                         $res->trade_status = 3;
-                        Log::write('消费订单' . $v['id'] . $a['res'][1]['resMsg']);
+                        Log::write('消费订单失败' . $v['id'] .$a['res']['resmsg'] . $a['no']);
                     }
                     $res->save();
                     dump($res->toArray());
@@ -505,17 +578,18 @@ class Dh extends HomeController
             Db::startTrans();
             try {
                 //还款参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'channel' => $v['channel']];
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'channel' => $v['channel'],'merchantNo'=>$v['user']['subMerchantNo']];
+
                 if (time() > strtotime($v['trade_time'])) {
-                    $a = $this->transferCreate($arr);
+                    $a = $this->hk($arr);
                     $res = PlanDeal::find($v['id']);
 
                     //写入交易返回
-                    if ( $a['res'][1]['resCode'] == '0000') {
+                    if ($a['res']['rescode'] == '00') {
                         $res->trade_status = 2;
-                        $res->message =  $a['res'][1]['content']['desc'];
-                        $res->no =  $a['res'][1]['content']['orderNo'];
-                        Log::write('还款订单' . $v['id'] .  $a['res'][1]['content']['desc'] .  $a['res'][1]['content']['orderNo']);
+                        $res->message = $a['res']['resmsg'];
+                        $res->no = $a['no'];
+                        Log::write('还款订单成功'. $v['id'] .$a['res']['resmsg'] . $a['no']);
                         //计划剩余还款金额
                         $plan = OrderPlan::find($v['PlanDetails']['plan_id']);
                         $plan->pending_amount = $plan['pending_amount'] - $v['trade_amount'];
@@ -531,9 +605,8 @@ class Dh extends HomeController
 
                     } else {
                         $res->trade_status = 3;
-                        $res->no = $a['no'];
-                        $res->message =  $a['res'][1]['resMsg'];
-                        Log::write('还款订单' . $v['id'] .  $a['res'][1]['resMsg']);
+                        $res->message = $a['res']['resmsg'];
+                        Log::write('还款订单失败' .$v['id'] .$a['res']['resmsg'] . $a['no']);
                     }
                     $res->save();
                     dump($res->toArray());
@@ -601,6 +674,7 @@ class Dh extends HomeController
     //
 
     //分润
+    //本级id,分润,计划
     protected function profit($u, $arr, $plandeal_id)
     {
         $u = User::find($u);

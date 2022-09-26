@@ -17,7 +17,15 @@ class Index extends HomeController
 {
     public function index()
     {
+        // Get the image and convert into string
 
+            $a=randomDivInt(2,500);
+            var_dump($a);//$a中便是分的不等数
+//            var_dump(array_sum($a));
+
+
+        $a=  imgToBase64("http://47.114.116.249:1314/upload/avatar/v2-44cf2c3fbd46260759691520e8c09dd4_r.jpg");
+        dump($a);die;
         $a = '{"content":"{\"desc\":\"\u4ea4\u6613\u5904\u7406\u4e2d\",\"orderNo\":\"xf202205191652952824459180\",\"orderStatus\":\"p\"}","merNo":"202200006463","resCode":"0000","resMsg":"\u9884\u4e0b\u5355\u6210\u529f","sign":"GkURXaFks+32Xty3SdrJpe8QIT+C0r+1vR97l6vuc5hdyVHhKsIAw3JfkwO7N5QpnDnaKp\/9p5p33jNPVZm5EwHTLM9OvlhyQN0JN\/MErySczMn\/jlRpho7mlXcNT\/Sqd4vpW8YwixmsgszoBsJJOl+Ej7JIhhU9GG3a8CMS6Yg="}';
         $a = json_decode($a, true);
         dump($a);

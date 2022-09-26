@@ -9,6 +9,9 @@
 namespace app\home\controller;
 
 use app\admin\model\admin\User;
+use app\admin\model\plan\PlanDeal;
+use app\admin\model\plan\PlanDetails;
+use app\admin\model\UserCard;
 use app\HomeController;
 use think\facade\Cache;
 use app\Request;
@@ -191,6 +194,33 @@ class Login extends HomeController
             return Result::Error('1000', $e->getMessage());
         }
     }
+    //绑卡回调
+    public function bind()
+    {
+        $req = request()->param();
+        $card = UserCard::with('user')->where('card_no', $req['bankAccount'])->find();
+        $card->payCardId=$req['bindId'];
+        $card->save();
+        if($card){
+            return 'success';
+        }
+
+    }
+
+    public function xfnotice()
+    {
+        $req = request()->param();
+       $plan =PlanDeal::where('no',$req['orderNo'])->find();
+        $plan->trade_status=3;
+        $plan->message=$req['resmsg'];
+        $plan->save();
+        if($plan){
+            return 'success';
+        }
+
+    }
+
+
 
     //版本更新
     public function version(Request $request)

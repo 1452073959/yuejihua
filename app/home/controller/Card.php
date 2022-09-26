@@ -6,11 +6,13 @@ namespace app\home\controller;
 use app\admin\model\UserCard;
 use app\home\help\Dh2;
 use app\home\help\Dh3;
+use app\home\help\Dh4;
 use app\home\help\Dhxe;
 use app\home\help\Result;
 use app\home\help\Yjh;
 use app\HomeController;
 use think\facade\Db;
+use think\facade\Request;
 
 class Card extends HomeController
 {
@@ -115,44 +117,171 @@ class Card extends HomeController
 
 
     //进件商户
-    public function Merchant_enters()
+    public function Merchant_enters(Request $request)
     {
 
         $req = request()->param();
-
         $user = $this->user(request());
         $reqData = [
-            'bankCardNo' => $req['bankCardNo'],//储蓄卡卡号
-            'bankCardPhoneNo' => $req['bankCardPhoneNo'],//储蓄卡预留手机号
-            'bankName' => $req['bankName'],//储蓄卡银行名称
-//            'cnaps'=>"310581000210",//储蓄卡联行号
-            'fullAddress' => $req['fullAddress'],
-            'idCardName' => $req['idCardName'],
-            'idCardNo' => $req['idCardNo'],
-//            'mcc' => "123",
-            'subMerchantName' => $req['idCardName'],
-            'subMerchantShortName' => $req['idCardName'],
-            'idCardFrontImageUrl' => "",
-            'idCardOppositeImageUrl' => "",
-            'idCardInHandImageUrl' => "",
-            'bankCardFrontImageUrl' => "",
-            'bankCardOppositeImageUrl' => ""
+            'merchantNo' => $req['IdCardNumber'],//商户表示
+            'MerchantCnName' => $req['MerchantCnName'],//商户简称 （用户姓名）
+            'BankAccountName' => $req['BankAccountName'],//持卡人姓名(用户姓名)
+            'cnaps' => '1',//持卡人姓名(用户姓名)
+            'BankAccount' => $req['BankAccount'],//	银行账号
+            'IdCardNumber' => $req['IdCardNumber'],//身份证号
+            'LinkPhone' => $req['LinkPhone'],//身份证号
         ];
-        $a = new Yjh();
-        $res = $a->OpenAccount($reqData);
-//        dump($res);
-        if ($res['code'] == 0) {
-            $user->subMerchantNo = $res['subMerchantNo'];
-            $user->idCardNo = $req['idCardNo'];
-            $user->name = $req['idCardName'];
+
+        $a = new Dh4();
+        $res = $a->Merchant_enters($reqData);
+        dump($res);
+        if ($res['rescode'] == 0) {
+            $user->subMerchantNo = $res['acqMerchantNo'];
             $user->save();
-            return Result::Success($res, $res['message']);
+            return Result::Success($res);
         } else {
-            return Result::Error(1000, $res['message']);
+            return Result::Error(1000, $res['resmsg']);
         }
 
     }
 
+    //绑卡发送短信
+    public function sendbind()
+    {
+
+        $req = request()->param();;
+        $user = $this->user(request());
+        $card = UserCard::where('id', $req['id'])->find();
+        $reqData = [
+            'merchantNo' => $user['subMerchantNo'],//商户表示
+            'type' =>$req['type'],//渠道编号，具体咨询业务对接人
+            'bankAccount' => $card['card_no'],//卡号
+            'bankPhone' => $card['tel'],//预留手机号码
+            'isFace' => 1,//		固定值1
+            'bankName' => $card['card_name'],//	持卡人姓名
+            'idCard' => $card['idCardNo'],//身份证号
+            'cvn' => $card['cvn2'],//	Cvn信用卡背面后三位
+            'validity' => $card['expiration_date'],//		有效期
+            'dcflag' =>1,//	1贷记卡0借记卡
+            'notifyUrl' =>"https://tdnetwork.cn/api/notice/alipay1",//		回调地址
+        ];
+        $a = new Dh4();
+        $res = $a->sendbind($reqData);
+        if ($res['rescode'] == 00) {
+            return Result::Success($res);
+        } else {
+            return Result::Error(1000, $res['resmsg']);
+        }
+
+
+    }
+        //绑卡确认
+    public function YKBindCardConfirm()
+    {
+        $req = request()->param();;
+        $user = $this->user(request());
+        $card = UserCard::where('id', $req['id'])->find();
+        $reqData = [
+            'merchantNo' => $user['subMerchantNo'],//商户表示
+            'type' =>$req['type'],//渠道编号，具体咨询业务对接人
+            'bankAccount' => $card['card_no'],//卡号
+            'bankPhone' => $card['tel'],//预留手机号码
+            'smsCode' => $req['smsCode'],//验证码
+        ];
+        $a = new Dh4();
+        $res = $a->YKBindCardConfirm($reqData);
+        if ($res['rescode'] == 00) {
+            $card->Signing_status = 2;
+            $card->channel = $card['channel'] . ','.$req['type'];
+            $card->save();
+            return Result::Success($res);
+        } else {
+            return Result::Error(1000, $res['resmsg']);
+        }
+    }
+
+    //获取城市
+    public function citySelect2()
+    {
+        $req = request()->param();;
+        $user = $this->user(request());
+        $reqData = [
+            'parentId' => $req['parentId'],//平台下发用户标识
+        ];
+        $a = new Dh4();
+        $res = $a->citySelect2($reqData);
+        dump($res);
+    }
+
+
+
+    //交易
+    public function pay()
+    {
+        $req = request()->param();;
+        $user = $this->user(request());
+        $card = UserCard::where('id', $req['id'])->find();
+        
+        $reqData = [
+            'merchantNo' => $user['subMerchantNo'],//平台下发用户标识
+            'payCardId' => '0BF8A7151D8A417B867F0EBD955989AB',//支付卡签约ID
+            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',//		回调地址
+            'orderNo' => $out_trade_no = 'hk' . date('Ymd') . time() . rand(1, 999999),//订单号，自己生成//订单号，自己生成,//		订单流水号
+            'storeNo' =>'420000',//获取城市六位地区编码
+            'bankAccount' =>$card['card_no'],//卡号
+            'payType' => 'YK',//YK代还 WK快捷
+            'acqCode' => '8979',//固定值YK必填，WK 快捷请咨询商务
+            'orderAmt' => 1000,//交易金额 单位：分
+            'rate' => 0.80,//交易费率 格式 如0.60, 万六十
+            'pro' => 1,//交易代付费 单笔手续费1 单位元,与代付费保持一致
+            'merchType' =>0,//固定值 0
+        ];
+        $a = new Dh4();
+
+        $res = $a->pay($reqData);
+        dump($res);
+    }
+
+    //还款
+    public function hk()
+    {
+        $req = request()->param();;
+        $user = $this->user(request());
+        $card = UserCard::where('id', $req['id'])->find();
+        $reqData = [
+            'merchantNo' => $user['subMerchantNo'],//平台下发用户标识
+            'payCardId' => '0BF8A7151D8A417B867F0EBD955989AB',//支付卡签约ID
+            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',//		回调地址
+            'acqCode' => '8979',//固定值YK必填，WK 快捷请咨询商务
+            'platOrderList' => '',//
+            'orderNo' => $out_trade_no = 'hk' . date('Ymd') . time() . rand(1, 999999),//订单号，自己生成//订单号，自己生成,//		订单流水号
+            'bankAccount' =>$card['card_no'],//卡号
+            'orderAmt' => 900,//交易金额 单位：分
+            'rate' => 0.5,//交易费率 格式 如0.60, 万六十
+            'pro' => 0.5//交易代付费 单笔手续费1 单位元,与代付费保持一致
+        ];
+        $a = new Dh4();
+        $res = $a->hk($reqData);
+        dump($res);
+    }
+
+    //查询余额
+    public function ye()
+    {
+        $req = request()->param();;
+        $user = $this->user(request());
+        $card = UserCard::where('id', $req['id'])->find();
+        $reqData = [
+            'merchantNo' => $user['subMerchantNo'],//平台下发用户标识
+            'bankAccount' =>$card['card_no'],//卡号
+            'acqCode' => '8979',//固定值YK必填，WK 快捷请咨询商务
+        ];
+        $a = new Dh4();
+        $res = $a->ye($reqData);
+        dump($res);
+    }
+
+    //华丽的分割线,--以下代码废弃-----------------------------------------------------------------------------------------------
     //绑卡
     public function bindCard()
     {
@@ -433,7 +562,7 @@ class Card extends HomeController
             'holderName' => $card['card_name'],//持卡人姓名
             'tel' => $card['tel'],//电话
             'orderAmount' => $req['orderAmount'],//代付金额
-            'rate' => 0.6,//手续费
+            'rate' => 0.5,//手续费
             'city' => '上海',//手续费
             'cvn' => $card['cvn2'],//cvn
             'validDate' => $card['expiration_date'],//卡有效期
@@ -454,16 +583,16 @@ class Card extends HomeController
         $user = $this->user(request());
         $req = request()->param();
         $card = UserCard::where('id', $req['id'])->find();
-        $out_trade_no = 'xf' . date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
+        $out_trade_no = 'hk' . date('Ymd') . time() . rand(1, 999999);//订单号，自己生成//订单号，自己生成
         $data = [
             'orderNo' => $out_trade_no,//订单号
             'idCard' => $card['idCardNo'],//身份证号
-            'agencyCode' => 'xt24',//通道编码
+            'agencyCode' => 'xt34',//通道编码
             'accountNo' => $card['card_no'],//卡号
             'holderName' => $card['card_name'],//持卡人姓名
             'tel' => $card['tel'],//电话
             'orderAmount' => $req['orderAmount'],//代付金额
-            'feeAmount' => 1,//手续费
+            'feeAmount' => 0.5,//手续费
             'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
         ];
         $res = $a->transferCreate($data);
@@ -481,7 +610,7 @@ class Card extends HomeController
         $card = UserCard::where('id', $req['id'])->find();
         $data = [
             'cardNo' => $card['idCardNo'],//订单号
-            'agencyCode' => 'xt24',//通道编码
+            'agencyCode' => 'xt34',//通道编码
         ];
         $res = $a->balanceQuery($data);
 //        dump($res);die;

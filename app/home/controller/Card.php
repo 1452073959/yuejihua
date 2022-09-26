@@ -163,7 +163,7 @@ class Card extends HomeController
             'cvn' => $card['cvn2'],//	Cvn信用卡背面后三位
             'validity' => $card['expiration_date'],//		有效期
             'dcflag' =>1,//	1贷记卡0借记卡
-            'notifyUrl' =>"https://tdnetwork.cn/api/notice/alipay1",//		回调地址
+            'notifyUrl' =>"http://47.114.116.249:1314//api/notice/alipay1",//		回调地址
         ];
         $a = new Dh4();
         $res = $a->sendbind($reqData);
@@ -225,7 +225,7 @@ class Card extends HomeController
         $reqData = [
             'merchantNo' => $user['subMerchantNo'],//平台下发用户标识
             'payCardId' => '0BF8A7151D8A417B867F0EBD955989AB',//支付卡签约ID
-            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',//		回调地址
+            'notifyUrl' => 'http://47.114.116.249:1314//api/notice/alipay1',//		回调地址
             'orderNo' => $out_trade_no = 'hk' . date('Ymd') . time() . rand(1, 999999),//订单号，自己生成//订单号，自己生成,//		订单流水号
             'storeNo' =>'420000',//获取城市六位地区编码
             'bankAccount' =>$card['card_no'],//卡号
@@ -251,7 +251,7 @@ class Card extends HomeController
         $reqData = [
             'merchantNo' => $user['subMerchantNo'],//平台下发用户标识
             'payCardId' => '0BF8A7151D8A417B867F0EBD955989AB',//支付卡签约ID
-            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',//		回调地址
+            'notifyUrl' => 'http://47.114.116.249:1314//api/notice/alipay1',//		回调地址
             'acqCode' => '8979',//固定值YK必填，WK 快捷请咨询商务
             'platOrderList' => '',//
             'orderNo' => $out_trade_no = 'hk' . date('Ymd') . time() . rand(1, 999999),//订单号，自己生成//订单号，自己生成,//		订单流水号
@@ -566,7 +566,7 @@ class Card extends HomeController
             'city' => '上海',//手续费
             'cvn' => $card['cvn2'],//cvn
             'validDate' => $card['expiration_date'],//卡有效期
-            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
+            'notifyUrl' => 'http://47.114.116.249:1314//api/notice/alipay1',
         ];
         dump($data);
         $res = $a->payOrderCreate($data);
@@ -593,7 +593,7 @@ class Card extends HomeController
             'tel' => $card['tel'],//电话
             'orderAmount' => $req['orderAmount'],//代付金额
             'feeAmount' => 0.5,//手续费
-            'notifyUrl' => 'https://tdnetwork.cn/api/notice/alipay1',
+            'notifyUrl' => 'http://47.114.116.249:1314//api/notice/alipay1',
         ];
         $res = $a->transferCreate($data);
         dump($res);

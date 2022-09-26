@@ -199,7 +199,10 @@ class Login extends HomeController
     public function xfnotice()
     {
         $req = request()->param();
-        Log::write('消费订单');
+        if(empty($req)){
+            return 'no';
+        }
+        Log::write('绑卡回调');
         Log::write($req);
         $card = UserCard::with('user')->where('card_no', $req['bankAccount'])->find();
         $card->payCardId=$req['bindId'];
@@ -213,7 +216,10 @@ class Login extends HomeController
     public function hknotice()
     {
         $req = request()->param();
-        Log::write('还款订单');
+        if(empty($req)){
+            return 'no';
+        }
+        Log::write('付还款订单');
         Log::write($req);
        $plan =PlanDeal::where('no',$req['orderNo'])->find();
         $plan->trade_status=3;

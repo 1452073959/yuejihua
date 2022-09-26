@@ -32,7 +32,7 @@ class Dh extends HomeController
         $reqData = [
             'merchantNo' => $req['merchantNo'],//平台下发用户标识
             'payCardId' =>$card['payCardId'],//支付卡签约ID
-            'notifyUrl' => 'http://47.114.116.249:1314/home/login/xfnotice',//		回调地址
+            'notifyUrl' => 'http://47.114.116.249:1314/home/login/hknotice',//		回调地址
             'orderNo' => $out_trade_no = 'xf' . date('Ymd') . time() . rand(1, 999999),//订单号，自己生成//订单号，自己生成,//		订单流水号
             'storeNo' =>'420000',//获取城市六位地区编码
             'bankAccount' =>$card['card_no'],//卡号

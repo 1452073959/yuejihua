@@ -17,6 +17,7 @@ use think\facade\Cache;
 use app\Request;
 use app\home\help\Result;
 use think\facade\Config;
+use think\facade\Log;
 
 class Login extends HomeController
 {
@@ -195,9 +196,10 @@ class Login extends HomeController
         }
     }
     //绑卡回调
-    public function bind()
+    public function xfnotice()
     {
         $req = request()->param();
+        Log::write('消费订单' .$req);
         $card = UserCard::with('user')->where('card_no', $req['bankAccount'])->find();
         $card->payCardId=$req['bindId'];
         $card->save();
@@ -207,9 +209,10 @@ class Login extends HomeController
 
     }
 
-    public function xfnotice()
+    public function hknotice()
     {
         $req = request()->param();
+        Log::write('还款订单' .$req);
        $plan =PlanDeal::where('no',$req['orderNo'])->find();
         $plan->trade_status=3;
         $plan->message=$req['resmsg'];

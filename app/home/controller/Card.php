@@ -163,7 +163,7 @@ class Card extends HomeController
             'cvn' => $card['cvn2'],//	Cvn信用卡背面后三位
             'validity' => $card['expiration_date'],//		有效期
             'dcflag' =>1,//	1贷记卡0借记卡
-            'notifyUrl' =>"http://47.114.116.249:1314//api/notice/alipay1",//		回调地址
+            'notifyUrl' =>"http://47.114.116.249:1314/home/login/bind",//		回调地址
         ];
         $a = new Dh4();
         $res = $a->sendbind($reqData);

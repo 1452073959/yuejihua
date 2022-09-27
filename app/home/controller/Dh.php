@@ -43,8 +43,10 @@ class Dh extends HomeController
             'pro' => 1,//交易代付费 单笔手续费1 单位元,与代付费保持一致
             'merchType' =>0,//固定值 0
         ];
+        dump($reqData);
         $a = new Dh4();
         $res = $a->pay($reqData);
+        dump($res);
         return ['no'=>$out_trade_no,'res'=>$res];
     }
 

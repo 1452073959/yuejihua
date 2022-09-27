@@ -196,7 +196,7 @@ class Login extends HomeController
         }
     }
     //绑卡回调
-    public function xfnotice()
+    public function bind()
     {
         $req = request()->param();
         if(empty($req)){

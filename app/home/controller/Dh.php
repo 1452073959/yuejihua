@@ -34,7 +34,7 @@ class Dh extends HomeController
             'payCardId' =>$card['payCardId'],//支付卡签约ID
             'notifyUrl' => 'http://47.114.116.249:1314/home/login/hknotice',//		回调地址
             'orderNo' => $out_trade_no = 'xf' . date('Ymd') . time() . rand(1, 999999),//订单号，自己生成//订单号，自己生成,//		订单流水号
-            'storeNo' =>'420000',//获取城市六位地区编码
+            'storeNo' =>$req['city_code'],//获取城市六位地区编码
             'bankAccount' =>$card['card_no'],//卡号
             'payType' => 'YK',//YK代还 WK快捷
             'acqCode' => $req['channel'],//固定值YK必填，WK 快捷请咨询商务
@@ -254,6 +254,7 @@ class Dh extends HomeController
                 'user_id' => $user['id'],//用户
                 'card_id' => $req['card_id'],//卡
                 'city' => $req['city'],//城市
+                'city_code' => $req['city_code'],//城市编号
                 'bill_amount' => $req['bill_amount'],//账单金额
                 'card_balance' => $req['card_balance'],//卡余额
                 'pending_amount' => $req['bill_amount'],//代还金额
@@ -300,6 +301,7 @@ class Dh extends HomeController
                             'trade_fee' => ($money[$i]/0.992)* 0.008 ,
                             'trade_type' => 1,
                             'city' => $req['city'],
+                            'city_code' => $req['city_code'],//城市编号
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -325,6 +327,7 @@ class Dh extends HomeController
                             'trade_fee' => ($money[$i]/0.992)* 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
+                            'city_code' => $req['city_code'],//城市编号
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -357,6 +360,7 @@ class Dh extends HomeController
                             'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
+                            'city_code' => $req['city_code'],//城市编号
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -369,6 +373,7 @@ class Dh extends HomeController
                             'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
+                            'city_code' => $req['city_code'],//城市编号
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -396,6 +401,7 @@ class Dh extends HomeController
                             'trade_fee' =>  ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
                             'city' => $req['city'],
+                            'city_code' => $req['city_code'],//城市编号
                             'card_id' => $req['card_id'],//卡
                             'plan_details_id' => $plan_detailsid,
                             'user_id' => $user['id']
@@ -406,6 +412,7 @@ class Dh extends HomeController
                             'trade_time' => date('Y-m-d H:i:s', strtotime($plan_deal_x1['trade_time']) + 7200),
                             'actual_amount' => '0',
                             'city' => $req['city'],
+                            'city_code' => $req['city_code'],//城市编号
                             'trade_fee' => ($money[$i]/2/0.992) * 0.008,
                             'trade_type' => 1,
                             'card_id' => $req['card_id'],//卡
@@ -535,7 +542,7 @@ class Dh extends HomeController
             Db::startTrans();
             try {
                 //消费参数
-                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'channel' => $v['channel'],'merchantNo'=>$v['user']['subMerchantNo']];
+                $arr = ['orderAmount' => $v['trade_amount'], 'id' => $v['card']['id'], 'channel' => $v['channel'],'merchantNo'=>$v['user']['subMerchantNo'],'city_code'=>$v['city_code']];
 
                 if (time() > strtotime($v['trade_time'])) {
                     $a = $this->pay($arr);

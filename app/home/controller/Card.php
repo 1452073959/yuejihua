@@ -206,11 +206,11 @@ class Card extends HomeController
         $req = request()->param();;
         $user = $this->user(request());
         $reqData = [
-            'parentId' => $req['parentId'],//平台下发用户标识
+            'parentId' => 0,//平台下发用户标识
         ];
         $a = new Dh4();
         $res = $a->citySelect2($reqData);
-        dump($res);
+        return Result::Success($res);
     }
 
 

@@ -134,7 +134,6 @@ class Card extends HomeController
 
         $a = new Dh4();
         $res = $a->Merchant_enters($reqData);
-        dump($res);
         if ($res['rescode'] == 0) {
             $user->subMerchantNo = $res['acqMerchantNo'];
             $user->save();
